@@ -4,9 +4,9 @@
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center">
-          <NuxtLink to="/" class="text-xl font-bold text-indigo-400"
-            >GymTrack Pro</NuxtLink
-          >
+          <NuxtLink to="/" class="text-xl font-bold text-indigo-400">{{
+            appConfig.title
+          }}</NuxtLink>
         </div>
 
         <!-- Desktop Navigation Links -->
@@ -107,6 +107,7 @@
           >Progress</NuxtLink
         >
         <button
+          v-if="isAuthenticated"
           @click="handleLogout"
           class="w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
         >
@@ -121,7 +122,8 @@
 import { ref } from "vue";
 
 const isMobileMenuOpen = ref(false);
-const { logout } = useAuth();
+const { logout, isAuthenticated } = useAuth();
+const appConfig = useAppConfig();
 
 const handleLogout = () => {
   isMobileMenuOpen.value = false;

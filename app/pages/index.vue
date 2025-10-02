@@ -62,11 +62,6 @@
         </div>
       </div>
     </main>
-
-    <footer class="bg-gray-800 text-center py-4">
-      <p class="text-gray-500">GymTrack Pro &copy; 2025</p>
-      <span @click="logout">Logout</span>
-    </footer>
   </div>
 </template>
 

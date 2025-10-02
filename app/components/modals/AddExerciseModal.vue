@@ -23,7 +23,7 @@
         >&#8203;</span
       >
       <div
-        class="inline-block align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full"
+        class="inline-block align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full mt-8"
       >
         <form @submit.prevent="saveExercise">
           <div class="bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -102,7 +102,7 @@
                     >
                       <option value="">None</option>
                       <option
-                        v-for="item in equipmentOptions"
+                        v-for="item in getEquipmentptions"
                         :key="item"
                         :value="item"
                       >
@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { BodyPart, ExerciseEquipment, NewExerciseData } from "~/types";
+import type { BodyPart, NewExerciseData } from "~/types";
 
 // Props and Emits
 const props = defineProps<{
@@ -169,13 +169,7 @@ const emit = defineEmits<{
 // Get the list of body parts from our composable
 const { bodyParts, fetchBodyParts } = useBodyParts();
 // Define the equipment options based on our type
-const equipmentOptions: ExerciseEquipment[] = [
-  "Jednoručky",
-  "Tyčka",
-  "Multipress",
-  "Kladka",
-  "Kettlebell",
-];
+const { getEquipmentptions } = useEquipment();
 
 // Form state
 const form = ref<Partial<NewExerciseData>>({});

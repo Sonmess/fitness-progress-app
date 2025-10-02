@@ -12,6 +12,7 @@ export const useAuth = () => {
   // --- State ---
   const user = useState<User | null>("user", () => null);
   const userProfile = useState<UserProfile | null>("userProfile", () => null);
+  const isAuthReady = useState<boolean>("isAuthReady", () => false);
 
   const auth = getAuth();
   const db = getFirestore();
@@ -21,6 +22,8 @@ export const useAuth = () => {
   // This is the core of the composable. It listens for changes in auth state.
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
+      console.log(firebaseUser);
+
       user.value = firebaseUser;
 
       // User is logged in, now fetch their profile from Firestore
@@ -42,6 +45,7 @@ export const useAuth = () => {
       user.value = null;
       userProfile.value = null;
     }
+    isAuthReady.value = true;
   });
 
   // --- Actions ---
@@ -58,7 +62,7 @@ export const useAuth = () => {
   const logout = async () => {
     await signOut(auth);
     // Redirect to login page after logout
-    await router.push("/login");
+    await router.push({ name: "login" });
   };
 
   // --- Computed Properties (Getters) ---
@@ -77,6 +81,7 @@ export const useAuth = () => {
     userNickname,
     userState,
     isAuthenticated,
+    isAuthReady,
     login,
     logout,
   };

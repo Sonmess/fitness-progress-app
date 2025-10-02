@@ -9,6 +9,8 @@
       <!-- The <slot /> component renders the current page's content here -->
       <slot />
     </main>
+
+    <common-base-footer />
   </div>
 </template>
 

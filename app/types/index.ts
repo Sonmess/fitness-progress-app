@@ -6,21 +6,13 @@ export interface BodyPart {
 
 export type ExerciseCategory = "Silový" | "Kardio" | "HIIT" | "Mobility";
 
-export type ExerciseEquipment =
-  | "Jednoručky"
-  | "Tyčka"
-  | "Multipress"
-  | "Kladka"
-  | "Kettlebell"
-  | "Stroj";
-
 export interface Exercise {
   id: string;
   name: string;
   description?: string;
   bodyPartId: BodyPart["id"];
   bodyPartName: BodyPart["name"];
-  equipment?: ExerciseEquipment;
+  equipment?: string;
   imageUrl?: string;
 }
 

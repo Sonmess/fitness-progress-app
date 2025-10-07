@@ -10,8 +10,13 @@ import {
   orderBy,
   doc,
   Timestamp,
+  updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import type { WorkoutSession, NewWorkoutSessionData } from "~/types";
+
+const DB_NAME_WORKOUTS = "workoutSessions";
+const DB_NAME_WORKOUT_LOGS = "workoutLogs";
 
 export const useWorkoutSessions = () => {
   // --- State ---
@@ -21,7 +26,8 @@ export const useWorkoutSessions = () => {
   // --- Dependencies ---
   const { userId } = useAuth(); // Get the current user's ID
   const db = getFirestore();
-  const sessionsCollection = collection(db, "workoutSessions");
+  const sessionsCollection = collection(db, DB_NAME_WORKOUTS);
+  const logsCollection = collection(db, DB_NAME_WORKOUT_LOGS); // For deleting associated logs
 
   // --- Actions ---
 
@@ -72,7 +78,7 @@ export const useWorkoutSessions = () => {
    */
   const fetchSessionById = async (sessionId: string) => {
     try {
-      const docRef = doc(db, "workoutSessions", sessionId);
+      const docRef = doc(db, DB_NAME_WORKOUTS, sessionId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -128,6 +134,60 @@ export const useWorkoutSessions = () => {
     }
   };
 
+  /**
+   * Updates an existing workout session.
+   */
+  const updateWorkoutSession = async (
+    sessionId: string,
+    sessionData: { title: string; notes?: string }
+  ) => {
+    try {
+      const docRef = doc(db, DB_NAME_WORKOUTS, sessionId);
+      await updateDoc(docRef, sessionData);
+      // Update local state for instant UI feedback
+      const index = sessions.value.findIndex((s) => s.id === sessionId);
+      if (index !== -1) {
+        sessions.value[index] = {
+          ...sessions.value[index],
+          ...sessionData,
+        } as WorkoutSession;
+      }
+    } catch (error) {
+      console.error("Error updating session: ", error);
+    }
+  };
+
+  /**
+   * Deletes a workout session and all of its associated logs.
+   */
+  const deleteWorkoutSession = async (sessionId: string) => {
+    if (!userId.value) return;
+    try {
+      // Step 1: Find all logs for this session
+      const logsQuery = query(
+        logsCollection,
+        where("sessionId", "==", sessionId),
+        where("userId", "==", userId.value)
+      );
+      const logsSnapshot = await getDocs(logsQuery);
+
+      // Step 2: Use a batch write to delete the session and all logs atomically
+      const batch = writeBatch(db);
+      logsSnapshot.forEach((logDoc) => {
+        batch.delete(logDoc.ref);
+      });
+      const sessionDocRef = doc(db, DB_NAME_WORKOUTS, sessionId);
+      batch.delete(sessionDocRef);
+
+      await batch.commit();
+
+      // Step 3: Update local state
+      sessions.value = sessions.value.filter((s) => s.id !== sessionId);
+    } catch (error) {
+      console.error("Error deleting session and logs: ", error);
+    }
+  };
+
   // --- Public API ---
   return {
     session,
@@ -135,5 +195,7 @@ export const useWorkoutSessions = () => {
     fetchWorkoutSessions,
     fetchSessionById,
     addWorkoutSession,
+    updateWorkoutSession,
+    deleteWorkoutSession,
   };
 };

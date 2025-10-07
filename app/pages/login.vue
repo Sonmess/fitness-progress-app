@@ -66,6 +66,7 @@ const email = ref("");
 const password = ref("");
 const errorMessage = ref<string | null>(null);
 const router = useRouter();
+const route = useRoute();
 
 const handleLogin = async () => {
   errorMessage.value = null;
@@ -86,7 +87,11 @@ const handleLogin = async () => {
     }
   } else {
     // On success, the watcher in app.vue will handle the redirect.
-    router.push("/");
+    const redirectPath = route.query.redirect as string | undefined;
+    if (redirectPath) {
+      router.push(redirectPath);
+    }
+    router.push({ name: "index" });
   }
 };
 </script>

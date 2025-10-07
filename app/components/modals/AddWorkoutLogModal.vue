@@ -48,7 +48,7 @@
                 >
                   <option disabled value="">Select an exercise</option>
                   <option
-                    v-for="exercise in exercises"
+                    v-for="exercise in sortedExercises"
                     :key="exercise.id"
                     :value="exercise"
                   >
@@ -75,6 +75,7 @@
                     <input
                       v-model.number="set.reps"
                       type="number"
+                      step="1"
                       :id="`reps-${index}`"
                       placeholder="Reps"
                       class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm"
@@ -87,6 +88,7 @@
                     <input
                       v-model.number="set.weight"
                       type="number"
+                      step="0.5"
                       :id="`weight-${index}`"
                       placeholder="Weight (kg)"
                       class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm"
@@ -154,6 +156,10 @@ const { userId } = useAuth();
 
 const selectedExercise = ref<Exercise | null>(null);
 const sets = ref<Set[]>([{ reps: 0, weight: 0 }]);
+
+const sortedExercises = computed(() => {
+  return [...exercises.value].sort((a, b) => a.name.localeCompare(b.name));
+});
 
 // Fetch exercises when modal opens
 watch(

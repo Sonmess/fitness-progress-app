@@ -11,9 +11,9 @@
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
-            @click="isModalOpen = true"
+            @click="isAddModalOpen = true"
             type="button"
-            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 sm:w-auto"
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
           >
             + Start New Session
           </button>
@@ -38,9 +38,11 @@
               >
                 <div class="min-w-0">
                   <div class="flex items-start gap-x-3">
-                    <p class="text-base font-semibold leading-6 text-white">
-                      {{ session.title }}
-                    </p>
+                    <NuxtLink
+                      :to="`/workouts/${session.id}`"
+                      class="text-base font-semibold leading-6 text-white hover:underline"
+                      >{{ session.title }}</NuxtLink
+                    >
                   </div>
                   <div
                     class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-400"
@@ -54,12 +56,22 @@
                 </div>
                 <div class="flex flex-none items-center gap-x-4">
                   <NuxtLink
-                    :to="`/workouts/${session.id}`"
-                    class="rounded-md bg-gray-700/50 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-600/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    :to="{ name: 'workouts-id', params: { id: session.id } }"
+                    class="rounded-md bg-gray-700/50 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-600/50"
+                    >View</NuxtLink
                   >
-                    View Session
-                    <span class="sr-only">, {{ session.title }}</span>
-                  </NuxtLink>
+                  <button
+                    @click="openEditModal(session)"
+                    class="rounded-md bg-yellow-600/50 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500/50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="handleDelete(session.id)"
+                    class="rounded-md bg-red-800/50 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700/50"
+                  >
+                    Delete
+                  </button>
                 </div>
               </li>
             </ul>
@@ -73,11 +85,17 @@
       </div>
     </div>
 
-    <!-- The Add Workout Session Modal -->
+    <!-- Modals -->
     <ModalsAddWorkoutSessionModal
-      :is-open="isModalOpen"
-      @close="isModalOpen = false"
+      :is-open="isAddModalOpen"
+      @close="isAddModalOpen = false"
       @save="handleStartNewSession"
+    />
+    <ModalsEditWorkoutModal
+      :is-open="isEditModalOpen"
+      :session="sessionToEdit"
+      @close="closeEditModal"
+      @save="handleUpdateSession"
     />
   </div>
 </template>
@@ -86,12 +104,20 @@
 import { ref, onMounted } from "vue";
 import type { WorkoutSession } from "~/types";
 
-const { sessions, fetchWorkoutSessions, addWorkoutSession } =
-  useWorkoutSessions();
-const isModalOpen = ref(false);
+const {
+  sessions,
+  fetchWorkoutSessions,
+  addWorkoutSession,
+  updateWorkoutSession,
+  deleteWorkoutSession,
+} = useWorkoutSessions();
 const router = useRouter();
 
-// Fetch sessions when the page loads
+// State for modals
+const isAddModalOpen = ref(false);
+const isEditModalOpen = ref(false);
+const sessionToEdit = ref<WorkoutSession | null>(null);
+
 onMounted(fetchWorkoutSessions);
 
 const handleStartNewSession = async (sessionData: {
@@ -99,15 +125,40 @@ const handleStartNewSession = async (sessionData: {
   notes?: string;
 }) => {
   const newSession = await addWorkoutSession(sessionData);
-  isModalOpen.value = false;
-
+  isAddModalOpen.value = false;
   if (newSession) {
-    // After creating the session, navigate to the detail page for that session
     router.push(`/workouts/${newSession.id}`);
   }
 };
 
-// Helper function to format dates nicely
+const openEditModal = (session: WorkoutSession) => {
+  sessionToEdit.value = session;
+  isEditModalOpen.value = true;
+};
+
+const closeEditModal = () => {
+  isEditModalOpen.value = false;
+  sessionToEdit.value = null;
+};
+
+const handleUpdateSession = async (updatedData: {
+  title: string;
+  notes?: string;
+}) => {
+  if (!sessionToEdit.value) return;
+  await updateWorkoutSession(sessionToEdit.value.id, updatedData);
+  closeEditModal();
+};
+
+const handleDelete = async (sessionId: string) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this session? This will also delete all of its logged exercises."
+  );
+  if (confirmed) {
+    await deleteWorkoutSession(sessionId);
+  }
+};
+
 const formatDate = (date: Date) => {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "long",

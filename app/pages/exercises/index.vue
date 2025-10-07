@@ -6,7 +6,7 @@
         <div class="sm:flex-auto">
           <h1 class="text-2xl font-bold text-white">Exercises</h1>
           <p class="mt-2 text-sm text-gray-400">
-            A list of all the exercises in your account, grouped by body part.
+            A list of all the exercises in your account.
           </p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
@@ -43,40 +43,28 @@
                     >
                       Equipment
                     </th>
+                    <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                      <span class="sr-only">View</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800 bg-gray-900">
-                  <tr v-if="exercises.length === 0">
-                    <td
-                      colspan="2"
-                      class="whitespace-nowrap px-3 py-4 text-sm text-center text-gray-400"
-                    >
-                      No exercises found. Add one to get started!
-                    </td>
-                  </tr>
                   <template
-                    v-for="(exercise, index) in exercises"
-                    :key="exercise.id"
+                    v-for="group in groupedExercises"
+                    :key="group.bodyPartName"
                   >
-                    <!-- Group Header: Displayed for the first item or when body part changes -->
-                    <tr
-                      v-if="
-                        index === 0 ||
-                        exercises[index - 1].bodyPartName !==
-                          exercise.bodyPartName
-                      "
-                    >
-                      <td
-                        colspan="2"
-                        class="bg-gray-800 px-4 py-2 text-sm font-bold text-white sm:pl-6"
+                    <tr class="border-t border-gray-700">
+                      <th
+                        colspan="3"
+                        scope="colgroup"
+                        class="bg-gray-800/50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6"
                       >
-                        {{ exercise.bodyPartName }}
-                      </td>
+                        {{ group.bodyPartName }}
+                      </th>
                     </tr>
-                    <!-- Exercise Row -->
-                    <tr>
+                    <tr v-for="exercise in group.exercises" :key="exercise.id">
                       <td
-                        class="whitespace-nowrap py-4 pl-8 pr-3 text-sm font-medium text-white sm:pl-10"
+                        class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6"
                       >
                         {{ exercise.name }}
                       </td>
@@ -84,6 +72,17 @@
                         class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
                       >
                         {{ exercise.equipment || "N/A" }}
+                      </td>
+                      <td
+                        class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
+                      >
+                        <NuxtLink
+                          :to="`/exercises/${exercise.id}`"
+                          class="text-indigo-400 hover:text-indigo-300"
+                          >View<span class="sr-only"
+                            >, {{ exercise.name }}</span
+                          ></NuxtLink
+                        >
                       </td>
                     </tr>
                   </template>
@@ -105,23 +104,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import type { NewExerciseData } from "~/composables/useExercises";
+import { ref, onMounted, computed } from "vue";
+import type { NewExerciseData, Exercise } from "~/types/index";
 
-// Use our composable to get access to the state and functions
 const { exercises, fetchExercises, addExercise } = useExercises();
 const isModalOpen = ref(false);
 
-// Fetch the initial list of exercises when the component is mounted
 onMounted(fetchExercises);
 
-/**
- * Handles the 'save' event from the modal.
- * This function receives the new exercise data, calls the action to save it,
- * and then closes the modal.
- */
 const handleAddNewExercise = async (newExercise: NewExerciseData) => {
   await addExercise(newExercise);
   isModalOpen.value = false;
 };
+
+const groupedExercises = computed(() => {
+  const groups: { bodyPartName: string; exercises: Exercise[] }[] = [];
+  exercises.value.forEach((exercise) => {
+    let group = groups.find((g) => g.bodyPartName === exercise.bodyPartName);
+    if (!group) {
+      group = { bodyPartName: exercise.bodyPartName, exercises: [] };
+      groups.push(group);
+    }
+    group.exercises.push(exercise);
+  });
+  return groups;
+});
 </script>

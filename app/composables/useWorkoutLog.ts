@@ -7,8 +7,11 @@ import {
   query,
   where,
   orderBy,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
-import type { WorkoutLog, NewWorkoutLogData } from "~/types";
+import type { WorkoutLog, NewWorkoutLogData, Set } from "~/types";
 
 export const useWorkoutLogs = () => {
   // --- State ---
@@ -71,10 +74,48 @@ export const useWorkoutLogs = () => {
     }
   };
 
+  /**
+   * Updates the sets for a specific workout log.
+   * @param logId The ID of the log document to update.
+   * @param updatedSets The new array of sets.
+   */
+  const updateWorkoutLog = async (logId: string, updatedSets: Set[]) => {
+    try {
+      const docRef = doc(db, "workoutLogs", logId);
+      await updateDoc(docRef, { sets: updatedSets });
+
+      // Update local state for instant UI feedback
+      const index = logs.value.findIndex((log) => log.id === logId);
+      if (index !== -1 && logs.value[index]) {
+        logs.value[index].sets = updatedSets;
+      }
+    } catch (error) {
+      console.error("Error updating workout log:", error);
+    }
+  };
+
+  /**
+   * Deletes a specific workout log.
+   * @param logId The ID of the log document to delete.
+   */
+  const deleteWorkoutLog = async (logId: string) => {
+    try {
+      const docRef = doc(db, "workoutLogs", logId);
+      await deleteDoc(docRef);
+
+      // Update local state for instant UI feedback
+      logs.value = logs.value.filter((log) => log.id !== logId);
+    } catch (error) {
+      console.error("Error deleting workout log:", error);
+    }
+  };
+
   // --- Public API ---
   return {
     logs,
     fetchLogsForSession,
     addWorkoutLog,
+    updateWorkoutLog,
+    deleteWorkoutLog,
   };
 };

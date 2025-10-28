@@ -9,81 +9,98 @@
     <div
       class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
     >
-      <!-- Background overlay -->
       <div
         @click="closeModal"
         class="fixed inset-0 bg-gray-800 bg-opacity-75 transition-opacity"
         aria-hidden="true"
       ></div>
-
-      <!-- Modal panel -->
       <span
         class="hidden sm:inline-block sm:align-middle sm:h-screen"
         aria-hidden="true"
         >&#8203;</span
       >
       <div
-        class="inline-block align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+        class="inline-block mt-16 align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full"
       >
         <form @submit.prevent="saveSession">
           <div class="bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start w-full">
-              <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                <h3
-                  class="text-lg leading-6 font-medium text-white"
-                  id="modal-title"
+            <h3
+              class="text-lg leading-6 font-medium text-white"
+              id="modal-title"
+            >
+              Start New Session
+            </h3>
+            <div class="mt-4 space-y-4">
+              <!-- Body Part Multi-Select -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300"
+                  >Body Parts</label
                 >
-                  Start New Workout Session
-                </h3>
-                <div class="mt-4 space-y-4">
-                  <!-- Session Title -->
-                  <div>
-                    <label
-                      for="title"
-                      class="block text-sm font-medium text-gray-300"
-                      >Session Title</label
-                    >
-                    <input
-                      v-model="form.title"
-                      type="text"
-                      id="title"
-                      placeholder="e.g., Chest & Triceps Day"
-                      class="mt-1 block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      required
-                    />
-                  </div>
-                  <!-- Notes -->
-                  <div>
-                    <label
-                      for="notes"
-                      class="block text-sm font-medium text-gray-300"
-                      >Notes (Optional)</label
-                    >
-                    <textarea
-                      v-model="form.notes"
-                      id="notes"
-                      rows="3"
-                      class="mt-1 block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    ></textarea>
+                <p class="text-xs text-gray-500">
+                  Select all parts you're training today.
+                </p>
+                <div
+                  v-if="bodyParts.length === 0"
+                  class="text-gray-400 text-sm mt-2"
+                >
+                  Loading body parts...
+                </div>
+                <div
+                  class="mt-2 max-h-48 overflow-y-auto space-y-2 rounded-md border border-gray-700 p-3"
+                >
+                  <div
+                    v-for="part in bodyParts"
+                    :key="part.id"
+                    class="relative flex items-start"
+                  >
+                    <div class="flex h-5 items-center">
+                      <input
+                        :id="`part-${part.id}`"
+                        :value="part"
+                        v-model="selectedBodyParts"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div class="ml-3 text-sm">
+                      <label
+                        :for="`part-${part.id}`"
+                        class="font-medium text-gray-300"
+                        >{{ part.name }}</label
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
+              <!-- Notes -->
+              <div>
+                <label
+                  for="session-notes"
+                  class="block text-sm font-medium text-gray-300"
+                  >Notes (Optional)</label
+                >
+                <textarea
+                  v-model="notes"
+                  id="session-notes"
+                  rows="2"
+                  class="mt-1 block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                ></textarea>
+              </div>
             </div>
           </div>
-          <!-- Action Buttons -->
           <div
             class="bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
           >
             <button
               type="submit"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Start Session
             </button>
             <button
               @click="closeModal"
               type="button"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-white hover:bg-gray-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Cancel
             </button>
@@ -95,35 +112,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import type { BodyPart, CreateSessionInput } from "~/types";
 
-// Props and Emits
-defineProps<{
+const props = defineProps<{
   isOpen: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "save", sessionData: { title: string; notes?: string }): void;
+  (e: "save", data: CreateSessionInput): void;
 }>();
 
+// Get body parts from our composable
+const { bodyParts, fetchBodyParts } = useBodyParts();
+
 // Form state
-const form = ref({
-  title: "",
-  notes: "",
+const selectedBodyParts = ref<BodyPart[]>([]);
+const notes = ref("");
+
+// Fetch body parts when component is mounted
+onMounted(() => {
+  if (bodyParts.value.length === 0) {
+    fetchBodyParts();
+  }
 });
 
 const closeModal = () => {
   emit("close");
-  // Reset form after closing
-  form.value = { title: "", notes: "" };
+  // Reset form
+  selectedBodyParts.value = [];
+  notes.value = "";
 };
 
 const saveSession = () => {
-  if (!form.value.title) {
-    alert("Please enter a title for the session.");
+  if (selectedBodyParts.value.length === 0) {
+    alert("Please select at least one body part.");
     return;
   }
-  emit("save", { ...form.value });
+  emit("save", {
+    bodyParts: selectedBodyParts.value,
+    notes: notes.value,
+  });
+  closeModal();
 };
 </script>

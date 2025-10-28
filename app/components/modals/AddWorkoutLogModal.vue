@@ -48,11 +48,11 @@
                 >
                   <option disabled value="">Select an exercise</option>
                   <option
-                    v-for="exercise in sortedExercises"
+                    v-for="exercise in filteredExercises"
                     :key="exercise.id"
                     :value="exercise"
                   >
-                    {{ exercise.name }}
+                    {{ exercise.name }} ({{ exercise.bodyPartName }})
                   </option>
                 </select>
               </div>
@@ -142,6 +142,7 @@ import type { Exercise, NewWorkoutLogData, Set } from "~/types";
 const props = defineProps<{
   isOpen: boolean;
   sessionId: string;
+  sessionBodyPartIds?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -157,8 +158,24 @@ const { userId } = useAuth();
 const selectedExercise = ref<Exercise | null>(null);
 const sets = ref<Set[]>([{ reps: 0, weight: 0 }]);
 
-const sortedExercises = computed(() => {
-  return [...exercises.value].sort((a, b) => a.name.localeCompare(b.name));
+// Filters the master exercise list based on the sessionBodyPartIds prop
+const filteredExercises = computed(() => {
+  // If no body part IDs are provided, or the exercises haven't loaded, return empty
+  if (
+    !props.sessionBodyPartIds ||
+    props.sessionBodyPartIds.length === 0 ||
+    exercises.value.length === 0
+  ) {
+    return [];
+  }
+
+  // Filter the exercises
+  const filtered = exercises.value.filter((exercise) =>
+    props.sessionBodyPartIds?.includes(exercise.bodyPartId)
+  );
+
+  // Sort the filtered list alphabetically by name
+  return filtered.sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // Fetch exercises when modal opens

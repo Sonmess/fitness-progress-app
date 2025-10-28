@@ -20,7 +20,7 @@
         >&#8203;</span
       >
       <div
-        class="inline-block align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all mt-8 sm:my-8 sm:align-middle sm:max-w-lg w-full"
+        class="inline-block align-bottom bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
       >
         <form @submit.prevent="saveChanges">
           <div class="bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -30,31 +30,59 @@
             >
               Edit Workout Session
             </h3>
+            <p class="mt-1 text-sm text-gray-400">
+              Update the body parts trained and notes for this session.
+            </p>
             <div class="mt-4 space-y-4">
+              <!-- Body Part Multi-Select -->
               <div>
-                <label
-                  for="edit-title"
-                  class="block text-sm font-medium text-gray-300"
-                  >Session Title</label
+                <label class="block text-sm font-medium text-gray-300"
+                  >Body Parts</label
                 >
-                <input
-                  v-model="form.title"
-                  type="text"
-                  id="edit-title"
-                  class="mt-1 block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  required
-                />
+                <div
+                  v-if="bodyParts.length === 0"
+                  class="text-gray-400 text-sm mt-2"
+                >
+                  Loading...
+                </div>
+                <div
+                  class="mt-2 max-h-48 overflow-y-auto space-y-2 rounded-md border border-gray-700 p-3"
+                >
+                  <div
+                    v-for="part in bodyParts"
+                    :key="part.id"
+                    class="relative flex items-start"
+                  >
+                    <div class="flex h-5 items-center">
+                      <input
+                        :id="`edit-part-${part.id}`"
+                        :value="part"
+                        v-model="selectedBodyParts"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div class="ml-3 text-sm">
+                      <label
+                        :for="`edit-part-${part.id}`"
+                        class="font-medium text-gray-300"
+                        >{{ part.name }}</label
+                      >
+                    </div>
+                  </div>
+                </div>
               </div>
+              <!-- Notes -->
               <div>
                 <label
-                  for="edit-notes"
+                  for="edit-session-notes"
                   class="block text-sm font-medium text-gray-300"
                   >Notes (Optional)</label
                 >
                 <textarea
-                  v-model="form.notes"
-                  id="edit-notes"
-                  rows="4"
+                  v-model="notes"
+                  id="edit-session-notes"
+                  rows="3"
                   class="mt-1 block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 ></textarea>
               </div>
@@ -85,7 +113,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { WorkoutSession } from "~/types";
+import type { WorkoutSession, BodyPart, CreateSessionInput } from "~/types";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -94,31 +122,61 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "save", data: { title: string; notes?: string }): void;
+  (e: "save", data: CreateSessionInput): void;
 }>();
 
-const form = ref({ title: "", notes: "" });
+const { bodyParts, fetchBodyParts } = useBodyParts();
 
-// When the modal opens, populate the form with the session data
+const selectedBodyParts = ref<BodyPart[]>([]);
+const notes = ref("");
+
+// Updated watch function to handle missing bodyPartIds
 watch(
   () => props.isOpen,
   (newValue) => {
-    if (newValue && props.session) {
-      form.value.title = props.session.title;
-      form.value.notes = props.session.notes || "";
+    if (newValue) {
+      // Always fetch body parts if needed
+      if (bodyParts.value.length === 0) {
+        fetchBodyParts().then(() => selectInitialParts());
+      } else {
+        selectInitialParts();
+      }
+      // Set notes (handle potential undefined)
+      notes.value = props.session?.notes || "";
+    } else {
+      // Reset form when closing
+      selectedBodyParts.value = [];
+      notes.value = "";
     }
   }
 );
+
+// Updated function to handle potentially missing bodyPartIds
+const selectInitialParts = () => {
+  // Check if the session exists and has the bodyPartIds array
+  if (props.session && Array.isArray(props.session.bodyPartIds)) {
+    selectedBodyParts.value = bodyParts.value.filter((part) =>
+      props.session?.bodyPartIds.includes(part.id)
+    );
+  } else {
+    // If bodyPartIds is missing, start with an empty selection
+    selectedBodyParts.value = [];
+  }
+};
 
 const closeModal = () => {
   emit("close");
 };
 
 const saveChanges = () => {
-  if (!form.value.title) {
-    alert("Please enter a title.");
+  if (selectedBodyParts.value.length === 0) {
+    alert("Please select at least one body part.");
     return;
   }
-  emit("save", { ...form.value });
+  emit("save", {
+    bodyParts: selectedBodyParts.value,
+    notes: notes.value,
+  });
+  // No need to call closeModal here if the parent component handles it on @save
 };
 </script>

@@ -22,6 +22,8 @@ export interface WorkoutSession {
   title: string;
   date: Date;
   notes?: string;
+  bodyPartIds: string[];
+  bodyPartNames: string[];
 }
 
 export interface WorkoutLog {
@@ -38,6 +40,11 @@ export interface WorkoutLog {
 export interface Set {
   reps: number;
   weight: number;
+}
+
+export interface CreateSessionInput {
+  bodyParts: BodyPart[];
+  notes?: string;  
 }
 
 export interface UserProfile {

@@ -13,7 +13,12 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
-import type { WorkoutSession, NewWorkoutSessionData } from "~/types";
+import type {
+  WorkoutSession,
+  NewWorkoutSessionData,
+  BodyPart,
+  CreateSessionInput,
+} from "~/types";
 
 const DB_NAME_WORKOUTS = "workoutSessions";
 const DB_NAME_WORKOUT_LOGS = "workoutLogs";
@@ -55,15 +60,11 @@ export const useWorkoutSessions = () => {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        // Convert the Firestore Timestamp back into a JavaScript Date object
-        const session: WorkoutSession = {
+        fetchedSessions.push({
           id: doc.id,
-          userId: data.userId,
-          title: data.title,
-          date: data.date.toDate(),
-          notes: data.notes,
-        };
-        fetchedSessions.push(session);
+          ...data,
+          date: (data.date as Timestamp).toDate(), // Convert firestore timestamp to JS date
+        } as WorkoutSession);
       });
 
       sessions.value = fetchedSessions;
@@ -97,37 +98,47 @@ export const useWorkoutSessions = () => {
   };
 
   /**
-   * Adds a new workout session for the current user.
-   * @param sessionData - The title and optional notes for the new session.
-   * @returns The newly created session object or null on error.
+   * Adds a new workout session for the current user based on selected body parts.
+   * @param sessionData The data from the modal, containing selected body parts and notes.
+   * @returns The newly created WorkoutSession object or null on failure.
    */
-  const addWorkoutSession = async (sessionData: {
-    title: string;
-    notes?: string;
-  }) => {
+  const addWorkoutSession = async (sessionData: CreateSessionInput) => {
     if (!userId.value) {
       console.error("Cannot add session: User not authenticated.");
       return null;
     }
-
     try {
+      // 1. Get names and IDs from the selected body parts
+      const bodyPartNames = sessionData.bodyParts.map((p) => p.name);
+      const bodyPartIds = sessionData.bodyParts.map((p) => p.id);
+
+      // 2. Auto-generate the title
+      let dayOfWeek = new Date().toLocaleDateString("sk-SK", {
+        weekday: "long",
+      });
+      dayOfWeek = capitalizeFirstLetter(dayOfWeek);
+      const title = `${bodyPartNames.join(" + ")} | ${dayOfWeek}`;
+
+      // 3. Create the new data object to save to Firestore
       const newSessionData: NewWorkoutSessionData = {
         userId: userId.value,
-        title: sessionData.title,
-        date: new Date(), // Set the current date for the session
+        title: title,
+        bodyPartIds: bodyPartIds,
+        bodyPartNames: bodyPartNames,
+        date: new Date(), // Set current date and time
         notes: sessionData.notes || "",
       };
 
       const docRef = await addDoc(sessionsCollection, newSessionData);
 
-      // For instant UI feedback, add the new session to the local state
-      const sessionWithId: WorkoutSession = {
+      // 4. Create the final object to return (with the new ID)
+      const newSession: WorkoutSession = {
         id: docRef.id,
         ...newSessionData,
       };
-      sessions.value.unshift(sessionWithId); // unshift() adds to the beginning of the array
 
-      return sessionWithId;
+      sessions.value.unshift(newSession); // Add to the beginning of the local list
+      return newSession;
     } catch (error) {
       console.error("Error adding workout session: ", error);
       return null;
@@ -135,22 +146,45 @@ export const useWorkoutSessions = () => {
   };
 
   /**
-   * Updates an existing workout session.
+   * Updates an existing workout session based on selected body parts and notes.
+   * Regenerates the title based on the new body parts.
    */
   const updateWorkoutSession = async (
     sessionId: string,
-    sessionData: { title: string; notes?: string }
+    sessionData: CreateSessionInput
   ) => {
+    if (!userId.value) return;
     try {
-      const docRef = doc(db, DB_NAME_WORKOUTS, sessionId);
-      await updateDoc(docRef, sessionData);
-      // Update local state for instant UI feedback
+      // 1. Get names and IDs from the updated body parts selection
+      const bodyPartNames = sessionData.bodyParts.map((p) => p.name);
+      const bodyPartIds = sessionData.bodyParts.map((p) => p.id);
+
+      // 2. Regenerate title using the session's original date
+      // Find the existing session in the local state to get its date
+      const existingSession = sessions.value.find((s) => s.id === sessionId);
+      const date = existingSession ? existingSession.date : new Date(); // Use existing date, fallback to now
+      let dayOfWeek = date.toLocaleDateString("sk-SK", { weekday: "long" });
+      dayOfWeek = capitalizeFirstLetter(dayOfWeek);
+      const title = `${bodyPartNames.join(" + ")} | ${dayOfWeek}`;
+
+      // 3. Prepare the data object for Firestore update
+      const updateData = {
+        title: title,
+        bodyPartIds: bodyPartIds,
+        bodyPartNames: bodyPartNames,
+        notes: sessionData.notes || "",
+      };
+
+      const docRef = doc(db, "workoutSessions", sessionId);
+      await updateDoc(docRef, updateData);
+
+      // 4. Update local state for instant UI feedback
       const index = sessions.value.findIndex((s) => s.id === sessionId);
       if (index !== -1) {
-        sessions.value[index] = {
-          ...sessions.value[index],
-          ...sessionData,
-        } as WorkoutSession;
+        // Merge existing data with the updated fields
+        if (sessions.value[index]) {
+          sessions.value[index] = { ...sessions.value[index], ...updateData };
+        }
       }
     } catch (error) {
       console.error("Error updating session: ", error);

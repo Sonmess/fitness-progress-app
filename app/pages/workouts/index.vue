@@ -38,11 +38,9 @@
               >
                 <div class="min-w-0">
                   <div class="flex items-start gap-x-3">
-                    <NuxtLink
-                      :to="`/workouts/${session.id}`"
-                      class="text-base font-semibold leading-6 text-white hover:underline"
-                      >{{ session.title }}</NuxtLink
-                    >
+                    <p class="text-base font-semibold leading-6 text-white">
+                      {{ session.title }}
+                    </p>
                   </div>
                   <div
                     class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-400"
@@ -54,6 +52,7 @@
                     </p>
                   </div>
                 </div>
+                <!-- Action Buttons -->
                 <div class="flex flex-none items-center gap-x-4">
                   <NuxtLink
                     :to="{ name: 'workouts-id', params: { id: session.id } }"
@@ -102,7 +101,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import type { WorkoutSession } from "~/types";
+// Import CreateSessionInput type
+import type { WorkoutSession, CreateSessionInput } from "~/types";
 
 const {
   sessions,
@@ -120,14 +120,11 @@ const sessionToEdit = ref<WorkoutSession | null>(null);
 
 onMounted(fetchWorkoutSessions);
 
-const handleStartNewSession = async (sessionData: {
-  title: string;
-  notes?: string;
-}) => {
+const handleStartNewSession = async (sessionData: CreateSessionInput) => {
   const newSession = await addWorkoutSession(sessionData);
   isAddModalOpen.value = false;
   if (newSession) {
-    router.push(`/workouts/${newSession.id}`);
+    router.push({ name: "workouts-id", params: { id: newSession.id } });
   }
 };
 
@@ -141,10 +138,9 @@ const closeEditModal = () => {
   sessionToEdit.value = null;
 };
 
-const handleUpdateSession = async (updatedData: {
-  title: string;
-  notes?: string;
-}) => {
+// --- THIS IS THE UPDATED FUNCTION ---
+// It now correctly expects and passes the CreateSessionInput object
+const handleUpdateSession = async (updatedData: CreateSessionInput) => {
   if (!sessionToEdit.value) return;
   await updateWorkoutSession(sessionToEdit.value.id, updatedData);
   closeEditModal();

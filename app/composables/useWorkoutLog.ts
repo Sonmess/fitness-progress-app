@@ -10,17 +10,23 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  Timestamp,
+  limit,
 } from "firebase/firestore";
 import type { WorkoutLog, NewWorkoutLogData, Set } from "~/types";
+
+const WORKOUT_LOGS_COLLECTION = "workoutLogs";
 
 export const useWorkoutLogs = () => {
   // --- State ---
   const logs = ref<WorkoutLog[]>([]);
+  const recentLog = ref<WorkoutLog | null>(null);
+  const isRecentLoading = ref(false);
 
   // --- Dependencies ---
   const { userId } = useAuth();
   const db = getFirestore();
-  const logsCollection = collection(db, "workoutLogs");
+  const logsCollection = collection(db, WORKOUT_LOGS_COLLECTION);
 
   // --- Actions ---
 
@@ -47,6 +53,40 @@ export const useWorkoutLogs = () => {
       logs.value = fetchedLogs;
     } catch (error) {
       console.error("Error fetching workout logs: ", error);
+    }
+  };
+
+  const fetchRecentLogForExercise = async (exerciseId: string) => {
+    if (!userId.value) {
+      recentLog.value = null;
+      return;
+    }
+
+    try {
+      isRecentLoading.value = true;
+      const q = query(
+        logsCollection,
+        where("userId", "==", userId.value),
+        where("exerciseId", "==", exerciseId),
+        orderBy("date", "desc"),
+        limit(1)
+      );
+      const querySnapshop = await getDocs(q);
+      if (!querySnapshop.empty) {
+        const doc = querySnapshop.docs[0];
+        if (doc && doc.data()) {
+          const data = doc.data();
+          recentLog.value = {
+            id: doc.id,
+            ...data,
+            date: (data.date as Timestamp).toDate(),
+          } as WorkoutLog;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching recent log: ", error);
+    } finally {
+      isRecentLoading.value = false;
     }
   };
 
@@ -113,7 +153,10 @@ export const useWorkoutLogs = () => {
   // --- Public API ---
   return {
     logs,
+    recentLog,
+    isRecentLoading,
     fetchLogsForSession,
+    fetchRecentLogForExercise,
     addWorkoutLog,
     updateWorkoutLog,
     deleteWorkoutLog,

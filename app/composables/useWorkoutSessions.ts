@@ -146,8 +146,8 @@ export const useWorkoutSessions = () => {
   };
 
   /**
-   * Updates an existing workout session based on selected body parts and notes.
-   * Regenerates the title based on the new body parts.
+   * Updates an existing workout session AND backfills the 'date' field
+   * on all its child WorkoutLogs if they are missing it.
    */
   const updateWorkoutSession = async (
     sessionId: string,
@@ -155,19 +155,18 @@ export const useWorkoutSessions = () => {
   ) => {
     if (!userId.value) return;
     try {
-      // 1. Get names and IDs from the updated body parts selection
+      // 1. Prepare Session Update
       const bodyPartNames = sessionData.bodyParts.map((p) => p.name);
       const bodyPartIds = sessionData.bodyParts.map((p) => p.id);
 
-      // 2. Regenerate title using the session's original date
-      // Find the existing session in the local state to get its date
       const existingSession = sessions.value.find((s) => s.id === sessionId);
-      const date = existingSession ? existingSession.date : new Date(); // Use existing date, fallback to now
-      let dayOfWeek = date.toLocaleDateString("sk-SK", { weekday: "long" });
-      dayOfWeek = capitalizeFirstLetter(dayOfWeek);
-      const title = `${bodyPartNames.join(" + ")} | ${dayOfWeek}`;
+      const sessionDate = existingSession ? existingSession.date : new Date(); // Get the session's date
+      const dayOfWeek = sessionDate.toLocaleDateString("sk-SK", {
+        weekday: "long",
+      });
+      const capitalizedDayOfWeek = capitalizeFirstLetter(dayOfWeek);
+      const title = `${bodyPartNames.join(" + ")} | ${capitalizedDayOfWeek}`;
 
-      // 3. Prepare the data object for Firestore update
       const updateData = {
         title: title,
         bodyPartIds: bodyPartIds,
@@ -175,19 +174,40 @@ export const useWorkoutSessions = () => {
         notes: sessionData.notes || "",
       };
 
-      const docRef = doc(db, "workoutSessions", sessionId);
-      await updateDoc(docRef, updateData);
+      // 2. Start a Batch Write
+      const batch = writeBatch(db);
 
-      // 4. Update local state for instant UI feedback
-      const index = sessions.value.findIndex((s) => s.id === sessionId);
-      if (index !== -1) {
-        // Merge existing data with the updated fields
-        if (sessions.value[index]) {
-          sessions.value[index] = { ...sessions.value[index], ...updateData };
+      // 3. Add the Session Update to the Batch
+      const sessionDocRef = doc(db, "workoutSessions", sessionId);
+      batch.update(sessionDocRef, updateData);
+
+      // 4. Find all child logs and add their date-stamp updates to the Batch
+      const logsQuery = query(
+        logsCollection,
+        where("sessionId", "==", sessionId),
+        where("userId", "==", userId.value)
+      );
+      const logsSnapshot = await getDocs(logsQuery);
+
+      logsSnapshot.forEach((logDoc) => {
+        const logData = logDoc.data();
+        // --- THIS IS THE FIX ---
+        // If the log is missing a date, stamp it with the parent session's date.
+        if (!logData.date) {
+          batch.update(logDoc.ref, { date: sessionDate });
         }
+      });
+
+      // 5. Commit all changes at once
+      await batch.commit();
+
+      // 6. Update local state
+      const index = sessions.value.findIndex((s) => s.id === sessionId);
+      if (index !== -1 && sessions.value[index]) {
+        sessions.value[index] = { ...sessions.value[index], ...updateData };
       }
     } catch (error) {
-      console.error("Error updating session: ", error);
+      console.error("Error updating session and backfilling logs: ", error);
     }
   };
 

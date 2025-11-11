@@ -33,6 +33,7 @@ export interface WorkoutLog {
   exerciseId: Exercise["id"];
   exerciseName: Exercise["name"];
   sets: Set[];
+  date: Date;
   notes?: string;
 }
 
@@ -44,7 +45,7 @@ export interface Set {
 
 export interface CreateSessionInput {
   bodyParts: BodyPart[];
-  notes?: string;  
+  notes?: string;
 }
 
 export interface UserProfile {

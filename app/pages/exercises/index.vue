@@ -13,82 +13,83 @@
           <button
             @click="isModalOpen = true"
             type="button"
-            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 sm:w-auto"
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
           >
             + Add New Exercise
           </button>
         </div>
       </div>
-      <!-- List of Exercises Table -->
-      <div class="mt-8 flex flex-col">
-        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div
-            class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8"
+
+      <!-- Filter Tags -->
+      <div class="mt-6 px-1 sm:px-0">
+        <label class="text-sm font-medium text-gray-300"
+          >Filter by body part:</label
+        >
+        <div class="mt-2 flex flex-wrap gap-2">
+          <!-- "All" Tag -->
+          <button
+            @click="selectedBodyPartId = null"
+            :class="[
+              'px-3 py-1 text-sm font-medium rounded-full',
+              selectedBodyPartId === null
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600',
+            ]"
           >
-            <div
-              class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg"
-            >
-              <table class="min-w-full">
-                <thead class="bg-gray-900">
-                  <tr>
-                    <th
-                      scope="col"
-                      class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-3.5 text-left text-sm font-semibold text-white"
-                    >
-                      Equipment
-                    </th>
-                    <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span class="sr-only">View</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800 bg-gray-900">
-                  <template
-                    v-for="group in groupedExercises"
-                    :key="group.bodyPartName"
-                  >
-                    <tr class="border-t border-gray-700">
-                      <th
-                        colspan="3"
-                        scope="colgroup"
-                        class="bg-gray-800/50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6"
-                      >
-                        {{ group.bodyPartName }}
-                      </th>
-                    </tr>
-                    <tr v-for="exercise in group.exercises" :key="exercise.id">
-                      <td
-                        class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6"
-                      >
-                        {{ exercise.name }}
-                      </td>
-                      <td
-                        class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"
-                      >
-                        {{ exercise.equipment || "N/A" }}
-                      </td>
-                      <td
-                        class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
-                      >
-                        <NuxtLink
-                          :to="`/exercises/${exercise.id}`"
-                          class="text-indigo-400 hover:text-indigo-300"
-                          >View<span class="sr-only"
-                            >, {{ exercise.name }}</span
-                          ></NuxtLink
-                        >
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
+            All
+          </button>
+          <!-- Dynamic Body Part Tags -->
+          <button
+            v-for="part in bodyParts"
+            :key="part.id"
+            @click="selectedBodyPartId = part.id"
+            :class="[
+              'px-3 py-1 text-sm font-medium rounded-full',
+              selectedBodyPartId === part.id
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600',
+            ]"
+          >
+            {{ part.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- List of Exercises Cards -->
+      <div class="mt-8">
+        <div
+          v-if="exercises.length === 0"
+          class="text-center text-gray-400 py-10"
+        >
+          No exercises found.
+        </div>
+        <div v-else class="space-y-10">
+          <!-- Loop through each filtered group -->
+          <section
+            v-for="group in filteredAndGroupedExercises"
+            :key="group.bodyPartName"
+          >
+            <h2 class="text-lg font-semibold text-white px-1 sm:px-0">
+              {{ group.bodyPartName }}
+            </h2>
+            <div class="mt-4 flex flex-wrap gap-4">
+              <ExercisesExerciseCard
+                v-for="exercise in group.exercises"
+                :key="exercise.id"
+                :exercise="exercise"
+                class="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.666rem)] lg:w-[calc(25%-0.75rem)]"
+              />
             </div>
+          </section>
+          <!-- Show message if filter returns no results -->
+          <div
+            v-if="
+              filteredAndGroupedExercises.length === 0 &&
+              selectedBodyPartId !== null
+            "
+            class="text-center text-gray-500 py-10"
+          >
+            No exercises found for this body part.
           </div>
         </div>
       </div>
@@ -105,21 +106,33 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import type { NewExerciseData, Exercise } from "~/types/index";
+import type { NewExerciseData, Exercise } from "~/types";
 
 const { exercises, fetchExercises, addExercise } = useExercises();
+const { bodyParts, fetchBodyParts } = useBodyParts(); // Get body parts for filtering
 const isModalOpen = ref(false);
+const selectedBodyPartId = ref<string | null>(null); // State for the filter
 
-onMounted(fetchExercises);
+onMounted(() => {
+  fetchExercises();
+  fetchBodyParts(); // Fetch body parts for the filter tags
+});
 
 const handleAddNewExercise = async (newExercise: NewExerciseData) => {
   await addExercise(newExercise);
   isModalOpen.value = false;
 };
 
-const groupedExercises = computed(() => {
+// New computed property to filter AND group the exercises
+const filteredAndGroupedExercises = computed(() => {
+  // 1. Filter the exercises based on the selected tag
+  const filteredList = selectedBodyPartId.value
+    ? exercises.value.filter((ex) => ex.bodyPartId === selectedBodyPartId.value)
+    : exercises.value;
+
+  // 2. Group the filtered list
   const groups: { bodyPartName: string; exercises: Exercise[] }[] = [];
-  exercises.value.forEach((exercise) => {
+  filteredList.forEach((exercise) => {
     let group = groups.find((g) => g.bodyPartName === exercise.bodyPartName);
     if (!group) {
       group = { bodyPartName: exercise.bodyPartName, exercises: [] };

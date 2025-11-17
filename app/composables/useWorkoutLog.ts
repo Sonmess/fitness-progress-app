@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref } from 'vue';
 import {
   collection,
   addDoc,
@@ -6,156 +6,170 @@ import {
   getFirestore,
   query,
   where,
-  orderBy,
   doc,
   updateDoc,
   deleteDoc,
-  Timestamp,
+  orderBy,
   limit,
-} from "firebase/firestore";
-import type { WorkoutLog, NewWorkoutLogData, Set } from "~/types";
-
-const WORKOUT_LOGS_COLLECTION = "workoutLogs";
+  getDoc,
+  Timestamp,
+} from 'firebase/firestore';
+import type { WorkoutLog, NewWorkoutLogData, Set } from '~/types';
 
 export const useWorkoutLogs = () => {
   // --- State ---
-  const logs = ref<WorkoutLog[]>([]);
+  const logs = ref<WorkoutLog[]>([]); // For the session list
+  const log = ref<WorkoutLog | null>(null); // For the edit page
   const recentLog = ref<WorkoutLog | null>(null);
-  const isRecentLoading = ref(false);
+  const isLoading = ref(false);
 
-  // --- Dependencies ---
   const { userId } = useAuth();
   const db = getFirestore();
-  const logsCollection = collection(db, WORKOUT_LOGS_COLLECTION);
+  const logsCollection = collection(db, 'workoutLogs');
 
   // --- Actions ---
 
-  /**
-   * Fetches all logs for a specific workout session.
-   * @param sessionId The ID of the workout session.
-   */
   const fetchLogsForSession = async (sessionId: string) => {
-    if (!userId.value) {
-      logs.value = [];
-      return;
-    }
+    if (!userId.value) return;
     try {
+      isLoading.value = true;
       const q = query(
         logsCollection,
-        where("userId", "==", userId.value),
-        where("sessionId", "==", sessionId)
+        where('userId', '==', userId.value),
+        where('sessionId', '==', sessionId),
+        orderBy('date', 'desc')
       );
       const querySnapshot = await getDocs(q);
-      const fetchedLogs: WorkoutLog[] = [];
-      querySnapshot.forEach((doc) => {
-        fetchedLogs.push({ id: doc.id, ...doc.data() } as WorkoutLog);
+      logs.value = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: (data.date as Timestamp).toDate(),
+        } as WorkoutLog;
       });
-      logs.value = fetchedLogs;
     } catch (error) {
-      console.error("Error fetching workout logs: ", error);
+      console.error('Error fetching workout logs: ', error);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Fetches a single workout log by its ID.
+   */
+  const fetchLogById = async (logId: string) => {
+    log.value = null; // Clear previous state
+    if (!userId.value) return;
+    try {
+      isLoading.value = true;
+      const docRef = doc(db, 'workoutLogs', logId);
+      const docSnap = await getDoc(docRef);
+      // Security check: Make sure the fetched log belongs to the current user
+      if (docSnap.exists() && docSnap.data().userId === userId.value) {
+        const data = docSnap.data();
+        log.value = {
+          id: docSnap.id,
+          ...data,
+          date: (data.date as Timestamp).toDate(),
+        } as WorkoutLog;
+      } else {
+        console.warn('Workout log not found or user not authorized.');
+      }
+    } catch (error) {
+      console.error('Error fetching log by ID:', error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
   const fetchRecentLogForExercise = async (exerciseId: string) => {
-    if (!userId.value) {
-      recentLog.value = null;
-      return;
-    }
-
+    if (!userId.value) return;
+    recentLog.value = null;
     try {
-      isRecentLoading.value = true;
+      isLoading.value = true;
       const q = query(
         logsCollection,
-        where("userId", "==", userId.value),
-        where("exerciseId", "==", exerciseId),
-        orderBy("date", "desc"),
+        where('userId', '==', userId.value),
+        where('exerciseId', '==', exerciseId),
+        orderBy('date', 'desc'),
         limit(1)
       );
-      const querySnapshop = await getDocs(q);
-      if (!querySnapshop.empty) {
-        const doc = querySnapshop.docs[0];
-        if (doc && doc.data()) {
-          const data = doc.data();
-          recentLog.value = {
-            id: doc.id,
-            ...data,
-            date: (data.date as Timestamp).toDate(),
-          } as WorkoutLog;
-        }
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty && querySnapshot.docs[0]) {
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        recentLog.value = {
+          id: doc.id,
+          ...data,
+          date: (data.date as Timestamp).toDate(),
+        } as WorkoutLog;
       }
     } catch (error) {
-      console.error("Error fetching recent log: ", error);
+      console.error('Error fetching recent log: ', error);
     } finally {
-      isRecentLoading.value = false;
+      isLoading.value = false;
     }
   };
 
-  /**
-   * Adds a new exercise log to a workout session.
-   * @param logData The data for the new log.
-   */
   const addWorkoutLog = async (logData: NewWorkoutLogData) => {
-    if (!userId.value) {
-      console.error("Cannot add log: User not authenticated.");
-      return null;
-    }
+    if (!userId.value) return null;
     try {
-      const logWithUser: NewWorkoutLogData = {
+      isLoading.value = true;
+      const logWithUserAndDate = {
         ...logData,
         userId: userId.value,
+        date: new Date(),
       };
-      const docRef = await addDoc(logsCollection, logWithUser);
-      const newLog = { id: docRef.id, ...logWithUser } as WorkoutLog;
-      logs.value.push(newLog); // Optimistically update UI
+      const docRef = await addDoc(logsCollection, logWithUserAndDate);
+      const newLog = { id: docRef.id, ...logWithUserAndDate } as WorkoutLog;
+      logs.value.unshift(newLog);
       return newLog;
     } catch (error) {
-      console.error("Error adding workout log: ", error);
+      console.error('Error adding workout log: ', error);
       return null;
+    } finally {
+      isLoading.value = false;
     }
   };
 
-  /**
-   * Updates the sets for a specific workout log.
-   * @param logId The ID of the log document to update.
-   * @param updatedSets The new array of sets.
-   */
   const updateWorkoutLog = async (logId: string, updatedSets: Set[]) => {
     try {
-      const docRef = doc(db, "workoutLogs", logId);
+      isLoading.value = true;
+      const docRef = doc(db, 'workoutLogs', logId);
       await updateDoc(docRef, { sets: updatedSets });
-
-      // Update local state for instant UI feedback
       const index = logs.value.findIndex((log) => log.id === logId);
       if (index !== -1 && logs.value[index]) {
         logs.value[index].sets = updatedSets;
       }
     } catch (error) {
-      console.error("Error updating workout log:", error);
+      console.error('Error updating workout log:', error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
-  /**
-   * Deletes a specific workout log.
-   * @param logId The ID of the log document to delete.
-   */
   const deleteWorkoutLog = async (logId: string) => {
     try {
-      const docRef = doc(db, "workoutLogs", logId);
+      isLoading.value = true;
+      const docRef = doc(db, 'workoutLogs', logId);
       await deleteDoc(docRef);
-
-      // Update local state for instant UI feedback
       logs.value = logs.value.filter((log) => log.id !== logId);
     } catch (error) {
-      console.error("Error deleting workout log:", error);
+      console.error('Error deleting workout log:', error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
   // --- Public API ---
   return {
     logs,
+    log, // Expose new state for the edit page
     recentLog,
-    isRecentLoading,
+    isLoading,
     fetchLogsForSession,
+    fetchLogById, // Expose new function for the edit page
     fetchRecentLogForExercise,
     addWorkoutLog,
     updateWorkoutLog,

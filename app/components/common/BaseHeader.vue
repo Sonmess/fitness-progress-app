@@ -1,12 +1,13 @@
 <template>
-  <!-- Header -->
-  <header class="bg-gray-800 shadow-md sticky top-0 z-20">
+  <header class="bg-gray-800 sticky top-0 z-20">
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center">
-          <NuxtLink to="/" class="text-xl font-bold text-indigo-400">{{
-            appConfig.title
-          }}</NuxtLink>
+          <NuxtLink
+            :to="{ name: 'index' }"
+            class="text-xl font-bold text-indigo-400"
+            >{{ headerTitle }}
+          </NuxtLink>
         </div>
 
         <!-- Desktop Navigation Links -->
@@ -36,7 +37,7 @@
           </div>
         </div>
 
-        <!-- Mobile Menu Button -->
+        <!-- Mobile Menu Button (Hamburger) -->
         <div class="-mr-2 flex md:hidden">
           <button
             @click="isMobileMenuOpen = !isMobileMenuOpen"
@@ -46,7 +47,7 @@
             aria-expanded="false"
           >
             <span class="sr-only">Open main menu</span>
-            <!-- Heroicon name: outline/menu -->
+            <!-- Icon for Menu -->
             <svg
               v-if="!isMobileMenuOpen"
               class="block h-6 w-6"
@@ -63,7 +64,7 @@
                 d="M4 6h16M4 12h16M4 18h16"
               />
             </svg>
-            <!-- Heroicon name: outline/x -->
+            <!-- Icon for Close (X) -->
             <svg
               v-else
               class="block h-6 w-6"
@@ -85,29 +86,15 @@
       </div>
     </nav>
 
-    <!-- Mobile menu, show/hide based on menu state. -->
+    <CommonHeaderMobileNavBar />
+
+    <!-- 
+      UPDATED: Mobile hamburger menu
+      (Now only contains the Logout button) 
+    -->
     <div v-if="isMobileMenuOpen" class="md:hidden" id="mobile-menu">
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-        <NuxtLink
-          to="/exercises"
-          @click="isMobileMenuOpen = false"
-          class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-          >Exercises</NuxtLink
-        >
-        <NuxtLink
-          to="/workouts"
-          @click="isMobileMenuOpen = false"
-          class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-          >Workouts</NuxtLink
-        >
-        <NuxtLink
-          to="/progress"
-          @click="isMobileMenuOpen = false"
-          class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-          >Progress</NuxtLink
-        >
         <button
-          v-if="isAuthenticated"
           @click="handleLogout"
           class="w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
         >
@@ -119,11 +106,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from 'vue';
 
 const isMobileMenuOpen = ref(false);
-const { logout, isAuthenticated } = useAuth();
+const { logout } = useAuth();
 const appConfig = useAppConfig();
+
+const headerTitle = computed(() => {
+  return appConfig.title ?? 'Dummy title';
+});
 
 const handleLogout = () => {
   isMobileMenuOpen.value = false;

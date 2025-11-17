@@ -1,9 +1,9 @@
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <!-- Back Button -->
+    <!-- Back Button (now dynamic) -->
     <div class="mb-4">
       <NuxtLink
-        :to="{ name: 'workouts-id-add', params: { id: sessionId } }"
+        :to="backLink"
         class="inline-flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300"
       >
         <svg
@@ -18,7 +18,7 @@
             clip-rule="evenodd"
           />
         </svg>
-        Back to Exercise List
+        {{ isEditMode ? 'Back to Session' : 'Back to Exercise List' }}
       </NuxtLink>
     </div>
 
@@ -29,7 +29,6 @@
         {{ exercise.bodyPartName }}
       </p>
 
-      <!-- Stats Section -->
       <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Personal Record -->
         <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -39,12 +38,11 @@
             Personal Record
           </h2>
           <div v-if="isPrSetLoading" class="text-gray-400 mt-2">Loading...</div>
-          <!-- Updated to show weight and reps -->
           <div v-else-if="personalRecordSet" class="mt-2">
             <span class="text-4xl font-bold text-white">{{
               personalRecordSet.weight
-            }}</span>
-            <span class="ml-1 text-xl text-gray-400">kg</span>
+            }}</span
+            ><span class="ml-1 text-xl text-gray-400">kg</span>
             <p class="text-lg text-gray-300">
               for {{ personalRecordSet.reps }} reps
             </p>
@@ -78,9 +76,11 @@
         </div>
       </div>
 
-      <!-- New Log Form -->
+      <!-- Log Form -->
       <form @submit.prevent="saveLog" class="mt-10">
-        <h2 class="text-xl font-semibold text-white">Log Today's Sets</h2>
+        <h2 class="text-xl font-semibold text-white">
+          {{ isEditMode ? "Edit Today's Sets" : "Log Today's Sets" }}
+        </h2>
         <div class="mt-4 space-y-4">
           <div
             v-for="(set, index) in sets"
@@ -131,7 +131,7 @@
             type="submit"
             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700"
           >
-            Save Log
+            {{ isEditMode ? 'Save Changes' : 'Save Log' }}
           </button>
         </div>
       </form>
@@ -140,31 +140,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import type { NewWorkoutLogData, Set } from "~/types";
+import { ref, onMounted, computed, watch } from 'vue';
+import type { NewWorkoutLogData, Set } from '~/types';
 
 const route = useRoute();
 const router = useRouter();
-const { userId } = useAuth();
 const sessionId = route.params.id as string;
 const exerciseId = route.params.exerciseId as string;
+const logToEditId = route.query.editLog as string | undefined;
+
+// --- Determine Mode ---
+const isEditMode = computed(() => !!logToEditId);
 
 // Get composables
 const { exercise, getExerciseById } = useExercises();
-// Updated to use the new function names
 const { personalRecordSet, isPrSetLoading, findPersonalRecordSet } =
   useProgress();
-const { recentLog, isRecentLoading, fetchRecentLogForExercise, addWorkoutLog } =
-  useWorkoutLogs();
+const {
+  log,
+  recentLog,
+  isLoading: isRecentLoading,
+  fetchLogById,
+  fetchRecentLogForExercise,
+  addWorkoutLog,
+  updateWorkoutLog,
+} = useWorkoutLogs();
+const { userId } = useAuth();
 
 // Form state
 const sets = ref<Set[]>([{ reps: 0, weight: 0 }]);
 
-// Fetch all data on page load
+// Fetch data on page load based on mode
 onMounted(() => {
   getExerciseById(exerciseId);
-  findPersonalRecordSet(exerciseId); // Call the new function
+
+  if (isEditMode.value) {
+    // --- EDIT MODE ---
+    fetchLogById(logToEditId as string);
+  }
+  findPersonalRecordSet(exerciseId);
   fetchRecentLogForExercise(exerciseId);
+});
+
+// If in edit mode, pre-fill the form once the log has been fetched
+watch(log, (newLog) => {
+  if (isEditMode.value && newLog) {
+    sets.value = JSON.parse(JSON.stringify(newLog.sets));
+  }
+});
+
+// Dynamic back link
+const backLink = computed(() => {
+  return isEditMode.value
+    ? { name: 'workouts-id', params: { id: sessionId } }
+    : { name: 'workouts-id-add', params: { id: sessionId } };
 });
 
 const addSet = () => {
@@ -184,25 +213,27 @@ const removeSet = (index: number) => {
 
 const saveLog = async () => {
   if (!exercise.value) return;
-
   const validSets = sets.value.filter((s) => s.reps > 0 && s.weight >= 0);
   if (validSets.length === 0) {
-    alert("Please enter reps and weight for at least one set.");
+    alert('Please enter reps and weight for at least one set.');
     return;
   }
 
-  if (userId.value) {
+  if (isEditMode.value) {
+    // --- UPDATE LOGIC ---
+    await updateWorkoutLog(logToEditId as string, validSets);
+  } else {
+    // --- CREATE LOGIC ---
     const logData: NewWorkoutLogData = {
-      userId: userId.value,
       sessionId: sessionId,
       exerciseId: exerciseId,
       exerciseName: exercise.value.name,
       sets: validSets,
-      date: new Date(),
     };
     await addWorkoutLog(logData);
   }
 
-  router.push({ name: "workouts-id", params: { id: sessionId } });
+  // After saving, always navigate back to the session detail page
+  router.push({ name: 'workouts-id', params: { id: sessionId } });
 };
 </script>

@@ -11,11 +11,10 @@
           }}</time>
         </p>
         <p v-if="session.bodyPartNames" class="mt-1 text-xs text-gray-500">
-          Targeting: {{ session.bodyPartNames.join(", ") }}
+          Targeting: {{ session.bodyPartNames.join(', ') }}
         </p>
       </div>
       <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-        <!-- CHANGED: This is now a NuxtLink to our new page -->
         <NuxtLink
           :to="{ name: 'workouts-id-add', params: { id: sessionId } }"
           class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
@@ -33,9 +32,6 @@
           class="text-center py-10 border-2 border-dashed border-gray-700 rounded-lg"
         >
           <p class="text-gray-400">No exercises logged for this session yet.</p>
-          <p class="text-gray-500 text-sm mt-1">
-            Click "+ Add Exercise Log" to get started.
-          </p>
         </div>
         <ul v-else role="list" class="divide-y divide-gray-800">
           <li v-for="log in logs" :key="log.id" class="py-5">
@@ -44,12 +40,21 @@
                 {{ log.exerciseName }}
               </p>
               <div class="space-x-4">
-                <button
-                  @click="openEditLogModal(log)"
+                <!-- 
+                        --- THIS IS THE CHANGE ---
+                        The "Edit" button is now a NuxtLink that passes a query param.
+                        It links to the log page for that exercise, with the log ID in the query.
+                      -->
+                <NuxtLink
+                  :to="{
+                    name: 'workouts-id-log-exerciseId',
+                    params: { id: sessionId, exerciseId: log.exerciseId },
+                    query: { editLog: log.id },
+                  }"
                   class="text-sm font-medium text-yellow-400 hover:text-yellow-300"
                 >
                   Edit
-                </button>
+                </NuxtLink>
                 <button
                   @click="handleDeleteLog(log.id)"
                   class="text-sm font-medium text-red-500 hover:text-red-400"
@@ -81,66 +86,36 @@
       </div>
     </div>
 
-    <!-- REMOVED: The AddWorkoutLogModal is no longer needed here -->
-
-    <!-- Modal for editing an exercise log -->
-    <ModalsEditWorkoutLogModal
-      :is-open="isEditLogModalOpen"
-      :log="logToEdit"
-      @close="closeEditLogModal"
-      @save="handleUpdateLog"
-    />
+    <!-- The EditWorkoutLogModal is no longer needed here -->
   </div>
   <div v-else class="p-8 text-center text-gray-400">Loading session...</div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import type { WorkoutLog, Set } from "~/types";
+import { ref, onMounted } from 'vue';
+import type { WorkoutLog, Set } from '~/types';
 
 const route = useRoute();
 const sessionId = route.params.id as string;
 
 // State and functions from composables
 const { session, fetchSessionById } = useWorkoutSessions();
-const { logs, fetchLogsForSession, updateWorkoutLog, deleteWorkoutLog } =
-  useWorkoutLogs();
-
-// Modal state
-// REMOVED: isAddLogModalOpen is no longer needed
-const isEditLogModalOpen = ref(false);
-const logToEdit = ref<WorkoutLog | null>(null);
+// We no longer need updateWorkoutLog here, the log page will handle it.
+const { logs, fetchLogsForSession, deleteWorkoutLog } = useWorkoutLogs();
 
 onMounted(async () => {
   await fetchSessionById(sessionId);
   await fetchLogsForSession(sessionId);
 });
 
-// --- CRUD Handlers for Logs ---
-const openEditLogModal = (log: WorkoutLog) => {
-  logToEdit.value = log;
-  isEditLogModalOpen.value = true;
-};
-
-const closeEditLogModal = () => {
-  isEditLogModalOpen.value = false;
-  logToEdit.value = null;
-};
-
-const handleUpdateLog = async (updatedSets: Set[]) => {
-  if (!logToEdit.value) return;
-  await updateWorkoutLog(logToEdit.value.id, updatedSets);
-  closeEditLogModal();
-};
-
 const handleDeleteLog = async (logId: string) => {
-  const confirmed = window.confirm("Are you sure you want to delete this log?");
+  const confirmed = window.confirm('Are you sure you want to delete this log?');
   if (confirmed) {
     await deleteWorkoutLog(logId);
   }
 };
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(date);
+  return new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date);
 };
 </script>

@@ -4,14 +4,14 @@ export interface BodyPart {
   imageUrl?: string;
 }
 
-export type ExerciseCategory = "Silový" | "Kardio" | "HIIT" | "Mobility";
+export type ExerciseCategory = 'Silový' | 'Kardio' | 'HIIT' | 'Mobility';
 
 export interface Exercise {
   id: string;
   name: string;
   description?: string;
-  bodyPartId: BodyPart["id"];
-  bodyPartName: BodyPart["name"];
+  bodyPartId: BodyPart['id'];
+  bodyPartName: BodyPart['name'];
   equipment?: string;
   imageUrl?: string;
 }
@@ -29,9 +29,9 @@ export interface WorkoutSession {
 export interface WorkoutLog {
   id: string;
   userId: string;
-  sessionId: WorkoutSession["id"];
-  exerciseId: Exercise["id"];
-  exerciseName: Exercise["name"];
+  sessionId: WorkoutSession['id'];
+  exerciseId: Exercise['id'];
+  exerciseName: Exercise['name'];
   sets: Set[];
   date: Date;
   notes?: string;
@@ -56,6 +56,6 @@ export interface UserProfile {
 }
 
 // Helper types for creating new documents (without the Firestore-generated 'id')
-export type NewExerciseData = Omit<Exercise, "id">;
-export type NewWorkoutSessionData = Omit<WorkoutSession, "id">;
-export type NewWorkoutLogData = Omit<WorkoutLog, "id">;
+export type NewExerciseData = Omit<Exercise, 'id'>;
+export type NewWorkoutSessionData = Omit<WorkoutSession, 'id'>;
+export type NewWorkoutLogData = Omit<WorkoutLog, 'id' | 'userId' | 'date'>;

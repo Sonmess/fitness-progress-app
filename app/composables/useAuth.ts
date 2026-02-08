@@ -4,9 +4,17 @@ import {
   signOut,
   onAuthStateChanged,
   type User,
+  type AuthError,
 } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import type { UserProfile } from "~/types";
+import { ROUTE_NAMES } from "~/constants/routes";
+
+// Define auth error response type
+export interface AuthErrorResponse {
+  code: string;
+  message: string;
+}
 
 export const useAuth = () => {
   // --- State ---
@@ -45,12 +53,21 @@ export const useAuth = () => {
   });
 
   // --- Actions ---
+  /**
+   * Login with email and password
+   * @returns Object with error property (null if successful)
+   */
   const login = async (email: string, password: string) => {
-    let error = null;
+    let error: AuthErrorResponse | null = null;
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (e: any) {
-      error = e;
+      // Firebase Auth errors have code and message properties
+      const authError = e as AuthError;
+      error = {
+        code: authError.code || 'auth/unknown-error',
+        message: authError.message || 'An unknown error occurred',
+      };
     }
     return { error };
   };
@@ -58,7 +75,7 @@ export const useAuth = () => {
   const logout = async () => {
     await signOut(auth);
     // Redirect to login page after logout
-    await router.push({ name: "login" });
+    await router.push({ name: ROUTE_NAMES.LOGIN });
   };
 
   // --- Computed Properties (Getters) ---

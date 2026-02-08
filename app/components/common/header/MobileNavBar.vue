@@ -3,7 +3,7 @@
     <li v-for="item in navBarList" :key="item.title">
       <LinkIcon :to="{ name: item.to }" :class="item.classes">
         <template #icon>
-          <component :is="item.icon" />
+          <component :size="20" :is="item.icon" />
         </template>
         {{ item.title }}
       </LinkIcon>
@@ -12,10 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import ExerciseIcon from '~/components/icons/ExerciseIcon.vue';
-import WorkoutsIcon from '~/components/icons/WorkoutsIcon.vue';
-import ProgressIcon from '~/components/icons/ProgressIcon.vue';
 import LinkIcon from '~/components/ui/navigation/LinkIcon.vue';
+import { ROUTE_NAMES } from '~/constants/routes';
+import {IconsCommonExerciseIcon, IconsCommonProgressIcon, IconsCommonWorkoutsIcon} from "#components";
 
 interface navigationItem {
   to: string;
@@ -26,20 +25,19 @@ interface navigationItem {
 
 const navBarList: navigationItem[] = [
   {
-    to: 'exercises',
+    to: ROUTE_NAMES.EXERCISES,
     title: 'Exercises',
-    icon: ExerciseIcon,
-    classes: '',
+    icon: IconsCommonExerciseIcon,
   },
   {
-    to: 'workouts',
+    to: ROUTE_NAMES.WORKOUTS,
     title: 'Workouts',
-    icon: WorkoutsIcon,
+    icon: IconsCommonWorkoutsIcon,
   },
   {
-    to: 'progress',
+    to: ROUTE_NAMES.PROGRESS,
     title: 'Progress',
-    icon: ProgressIcon,
+    icon: IconsCommonProgressIcon,
   },
 ];
 </script>

@@ -25,8 +25,10 @@ const DB_NAME_WORKOUT_LOGS = "workoutLogs";
 
 export const useWorkoutSessions = () => {
   // --- State ---
-  const sessions = ref<WorkoutSession[]>([]);
-  const session = ref<WorkoutSession | null>(null); // For the detail view
+  // Use useState for global state caching across the app
+  const sessions = useState<WorkoutSession[]>('workoutSessions', () => []);
+  const session = useState<WorkoutSession | null>('currentWorkoutSession', () => null);
+  const isLoading = useState<boolean>('workoutSessionsLoading', () => false);
 
   // --- Dependencies ---
   const { userId } = useAuth(); // Get the current user's ID
@@ -38,15 +40,22 @@ export const useWorkoutSessions = () => {
 
   /**
    * Fetches all workout sessions for the current user from Firestore.
+   * @param force If true, forces a refresh even if data is already cached.
    */
-  const fetchWorkoutSessions = async () => {
+  const fetchWorkoutSessions = async (force = false) => {
     // Ensure we have a user before querying
     if (!userId.value) {
       sessions.value = [];
       return;
     }
 
+    // Skip fetch if already loaded for this user and not forcing refresh
+    if (sessions.value.length > 0 && !force) {
+      return;
+    }
+
     try {
+      isLoading.value = true;
       // Create a query to get documents where 'userId' matches the current user,
       // and order them by date with the newest first.
       const q = query(
@@ -70,15 +79,26 @@ export const useWorkoutSessions = () => {
       sessions.value = fetchedSessions;
     } catch (error) {
       console.error("Error fetching workout sessions: ", error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
   /**
-   * Fetches a single workout session by its ID.
+   * Fetches a single workout session by its ID. Checks cache first, then fetches from Firestore if needed.
    * @param sessionId The ID of the document to fetch.
    */
   const fetchSessionById = async (sessionId: string) => {
     try {
+      // First, check if we have it in the cached sessions array
+      const cachedSession = sessions.value.find((s) => s.id === sessionId);
+      if (cachedSession) {
+        session.value = cachedSession;
+        return;
+      }
+
+      // If not in cache, fetch from Firestore
+      isLoading.value = true;
       const docRef = doc(db, DB_NAME_WORKOUTS, sessionId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -94,6 +114,8 @@ export const useWorkoutSessions = () => {
       }
     } catch (error) {
       console.error("Error fetching session by ID:", error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
@@ -246,6 +268,7 @@ export const useWorkoutSessions = () => {
   return {
     session,
     sessions,
+    isLoading,
     fetchWorkoutSessions,
     fetchSessionById,
     addWorkoutSession,

@@ -150,7 +150,7 @@ const emit = defineEmits<{
   (e: "save"): void;
 }>();
 
-// Get master list of exercises for the dropdown
+// Get the master list of exercises for the dropdown
 const { exercises, fetchExercises } = useExercises();
 const { addWorkoutLog } = useWorkoutLogs();
 const { userId } = useAuth();
@@ -204,7 +204,6 @@ const saveLog = async () => {
 
   if (userId.value) {
     const logData: NewWorkoutLogData = {
-      userId: userId.value,
       sessionId: props.sessionId,
       exerciseId: selectedExercise.value.id,
       exerciseName: selectedExercise.value.name,

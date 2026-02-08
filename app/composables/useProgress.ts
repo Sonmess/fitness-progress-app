@@ -20,12 +20,12 @@ const WORKOUT_LOGS_COLLECTION = "workoutLogs";
 
 export const useProgress = () => {
   // --- State ---
-  // Stores the list of all calculated personal records.
-  const personalRecords = ref<PersonalRecord[]>([]);
-  const isLoading = ref(false);
-
-  const personalRecordSet = ref<Set | null>(null);
-  const isPrSetLoading = ref(false);
+  // Use useState for global state caching across the app
+  const personalRecords = useState<PersonalRecord[]>('personalRecords', () => []);
+  const isLoading = useState<boolean>('personalRecordsLoading', () => false);
+  const personalRecordSet = useState<Set | null>('personalRecordSet', () => null);
+  const isPrSetLoading = useState<boolean>('prSetLoading', () => false);
+  const lastCalculatedUserId = useState<string | null>('lastCalculatedUserId', () => null);
 
   // --- Dependencies ---
   const { userId } = useAuth();
@@ -39,10 +39,16 @@ export const useProgress = () => {
   /**
    * Calculates the all-time maximum weight for every exercise the user has logged.
    * The final list is sorted by body part, then by exercise name.
+   * @param force If true, forces a refresh even if data is already cached.
    */
-  const calculateAllPersonalRecords = async () => {
+  const calculateAllPersonalRecords = async (force = false) => {
     if (!userId.value) {
       personalRecords.value = [];
+      return;
+    }
+
+    // Skip calculation if already done for this user and not forcing refresh
+    if (lastCalculatedUserId.value === userId.value && personalRecords.value.length > 0 && !force) {
       return;
     }
 
@@ -91,6 +97,7 @@ export const useProgress = () => {
       });
 
       personalRecords.value = records;
+      lastCalculatedUserId.value = userId.value;
     } catch (error) {
       console.error("Error calculating personal records: ", error);
       personalRecords.value = [];
@@ -128,7 +135,7 @@ export const useProgress = () => {
 
       personalRecordSet.value = bestSet;
     } catch (error) {
-      console.error("Error finding persona;l record set: ", error);
+      console.error("Error finding personal record set: ", error);
     } finally {
       isPrSetLoading.value = false;
     }

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from "#imports";
+import { useAuth } from '~/composables/useAuth';
 
 // No script logic needed for this static page yet
 const config = useRuntimeConfig();

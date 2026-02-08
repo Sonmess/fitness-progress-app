@@ -1,4 +1,3 @@
-import { ref } from "vue";
 import { type Exercise, type NewExerciseData } from "~/types";
 import {
   collection,
@@ -18,8 +17,11 @@ const EXERCISE_COLLECTION = "exercises";
 
 export const useExercises = () => {
   const { $firestore } = useNuxtApp();
-  const exercises = ref<Exercise[]>([]);
-  const exercise = ref<Exercise | null>(null);
+
+  // Use useState for global state caching across the app
+  const exercises = useState<Exercise[]>('exercises', () => []);
+  const exercise = useState<Exercise | null>('currentExercise', () => null);
+  const isLoading = useState<boolean>('exercisesLoading', () => false);
 
   // Create a reference to the 'exercises' collection in Firestore
   const exercisesCollection = collection(
@@ -28,10 +30,17 @@ export const useExercises = () => {
   );
 
   /**
-   * Fetches all exercises from the Firestore database and updates the local state.
+   * Fetches all exercises from the Firestore database and updates the global state.
+   * @param force If true, forces a refresh even if data is already cached.
    */
-  const fetchExercises = async () => {
+  const fetchExercises = async (force = false) => {
+    // Skip fetch if already loaded and not forcing refresh
+    if (exercises.value.length > 0 && !force) {
+      return;
+    }
+
     try {
+      isLoading.value = true;
       const q = query(
         exercisesCollection,
         orderBy("bodyPartName"),
@@ -47,12 +56,26 @@ export const useExercises = () => {
       );
     } catch (error) {
       console.error("Error fetching exercises:", error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
+  /**
+   * Gets a single exercise by ID. Checks cache first, then fetches from Firestore if needed.
+   * @param exerciseId The exercise ID to fetch
+   */
   const getExerciseById = async (exerciseId: string) => {
     try {
-      // const docRef = doc($firestore as Firestore, "exercises", exerciseId);
+      // First, check if we have it in the cached exercises array
+      const cachedExercise = exercises.value.find((ex) => ex.id === exerciseId);
+      if (cachedExercise) {
+        exercise.value = cachedExercise;
+        return;
+      }
+
+      // If not in cache, fetch from Firestore
+      isLoading.value = true;
       const docRef = doc(exercisesCollection, exerciseId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -64,7 +87,9 @@ export const useExercises = () => {
         throw new Error("Exercise not found by ID: " + exerciseId);
       }
     } catch (error) {
-      console.error("Error fetching and exercise", error);
+      console.error("Error fetching exercise", error);
+    } finally {
+      isLoading.value = false;
     }
   };
 
@@ -135,6 +160,7 @@ export const useExercises = () => {
   return {
     exercise,
     exercises,
+    isLoading,
     fetchExercises,
     addExercise,
     getExerciseById,

@@ -18,10 +18,12 @@ import type { WorkoutLog, NewWorkoutLogData, Set } from '~/types';
 
 export const useWorkoutLogs = () => {
   // --- State ---
-  const logs = ref<WorkoutLog[]>([]); // For the session list
-  const log = ref<WorkoutLog | null>(null); // For the edit page
-  const recentLog = ref<WorkoutLog | null>(null);
-  const isLoading = ref(false);
+  // Use useState for global state caching across the app
+  const logs = useState<WorkoutLog[]>('workoutLogs', () => []);
+  const log = useState<WorkoutLog | null>('currentWorkoutLog', () => null);
+  const recentLog = useState<WorkoutLog | null>('recentWorkoutLog', () => null);
+  const isLoading = useState<boolean>('workoutLogsLoading', () => false);
+  const currentSessionId = useState<string | null>('currentLogsSessionId', () => null);
 
   const { userId } = useAuth();
   const db = getFirestore();
@@ -29,8 +31,19 @@ export const useWorkoutLogs = () => {
 
   // --- Actions ---
 
-  const fetchLogsForSession = async (sessionId: string) => {
+  /**
+   * Fetches workout logs for a specific session. Uses cache if available for the same session.
+   * @param sessionId The session ID to fetch logs for
+   * @param force If true, forces a refresh even if data is already cached
+   */
+  const fetchLogsForSession = async (sessionId: string, force = false) => {
     if (!userId.value) return;
+
+    // Skip fetch if already loaded for this session and not forcing refresh
+    if (currentSessionId.value === sessionId && logs.value.length > 0 && !force) {
+      return;
+    }
+
     try {
       isLoading.value = true;
       const q = query(
@@ -48,6 +61,7 @@ export const useWorkoutLogs = () => {
           date: (data.date as Timestamp).toDate(),
         } as WorkoutLog;
       });
+      currentSessionId.value = sessionId;
     } catch (error) {
       console.error('Error fetching workout logs: ', error);
     } finally {
@@ -56,11 +70,21 @@ export const useWorkoutLogs = () => {
   };
 
   /**
-   * Fetches a single workout log by its ID.
+   * Fetches a single workout log by its ID. Checks cache first, then fetches from Firestore if needed.
+   * @param logId The workout log ID to fetch
    */
   const fetchLogById = async (logId: string) => {
-    log.value = null; // Clear previous state
     if (!userId.value) return;
+
+    // First, check if we have it in the cached logs array
+    const cachedLog = logs.value.find((l) => l.id === logId);
+    if (cachedLog) {
+      log.value = cachedLog;
+      return;
+    }
+
+    // If not in cache, fetch from Firestore
+    log.value = null; // Clear previous state
     try {
       isLoading.value = true;
       const docRef = doc(db, 'workoutLogs', logId);
@@ -112,22 +136,31 @@ export const useWorkoutLogs = () => {
     }
   };
 
+  /**
+   * Adds a new workout log. Requires user to be authenticated.
+   * @param logData The workout log data (userId and date are automatically added)
+   * @returns The newly created WorkoutLog
+   * @throws Error if user is not authenticated
+   */
   const addWorkoutLog = async (logData: NewWorkoutLogData) => {
-    if (!userId.value) return null;
+    if (!userId.value) {
+      throw new Error('User must be authenticated to add workout logs');
+    }
+
     try {
       isLoading.value = true;
-      const logWithUserAndDate = {
+      const logWithUserAndDate: Omit<WorkoutLog, 'id'> = {
         ...logData,
         userId: userId.value,
         date: new Date(),
       };
       const docRef = await addDoc(logsCollection, logWithUserAndDate);
-      const newLog = { id: docRef.id, ...logWithUserAndDate } as WorkoutLog;
+      const newLog: WorkoutLog = { id: docRef.id, ...logWithUserAndDate };
       logs.value.unshift(newLog);
       return newLog;
     } catch (error) {
       console.error('Error adding workout log: ', error);
-      return null;
+      throw error; // Re-throw to let caller handle it
     } finally {
       isLoading.value = false;
     }

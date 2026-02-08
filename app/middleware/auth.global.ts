@@ -1,3 +1,5 @@
+import {ROUTE_NAMES} from "~/constants/routes";
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
   // Use the useAuth composable to check the authentication state.
   // Composables are auto-imported and can be used directly in middleware.
@@ -5,14 +7,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const nuxtApp = useNuxtApp();
 
   // The login page is the only public route that doesn't require authentication.
-  const isPublicRoute = to.name === "login";
+  const isPublicRoute = to.name === ROUTE_NAMES.LOGIN;
 
   // Waiting for promise to be resolved
   await nuxtApp.$authReady;
 
   // Case 1: User is NOT authenticated
   if (!isAuthenticated.value && !isPublicRoute) {
-    return navigateTo({ name: "login", query: { redirect: to.fullPath } });
+    return navigateTo({ name: ROUTE_NAMES.LOGIN, query: { redirect: to.fullPath } });
   }
 
   // Case 2: User IS authenticated
@@ -22,7 +24,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     if (from.query.redirect) {
       return navigateTo(String(from.query.redirect));
     } else {
-      return navigateTo({ name: "index" });
+      return navigateTo({ name: ROUTE_NAMES.HOME });
     }
   }
 });

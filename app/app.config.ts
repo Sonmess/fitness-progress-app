@@ -1,5 +1,15 @@
 export default defineAppConfig({
-  title: "Fitness progress",
+  meta: {
+    title: 'SEO TITLE - FITNESS PROGRESS',
+    desc: 'SEO DESCRIPTION - FITNESS PROGRESS',
+    headline : 'Fitness progress',
+    perex: 'Track your workouts, monitor your progress, and achieve your fitness goals.'
+  },
+  author: {
+    name: "Matej Mess Boháč",
+    email: "INSERT SPECIAL EMAIL HERE",
+    repo: "https://github.com/Sonmess/fitness-progress-app",
+  },
   localStorages: { auth: "fitness-auth" },
   theme: {
     dark: true,

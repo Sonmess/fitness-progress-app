@@ -1,10 +1,12 @@
 <template>
-  <section class="page-container flex flex-col gap-8">
+  <section class="page-container flex flex-col gap-6">
+    <div class="page-navigation">
+      <slot name="navigation"/>
+    </div>
+
     <div v-if="title || $slots.icon" class="page-header flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <slot
-            name="icon"
-        />
+        <slot name="icon" />
         <h1
             v-if="title"
             class="text-2xl font-bold text-white"

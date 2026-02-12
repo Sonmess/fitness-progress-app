@@ -1,6 +1,8 @@
 <template>
   <section class="page-container flex flex-col gap-6">
-    <div class="page-navigation">
+    <div
+        v-if="$slots.navigation"
+        class="page-navigation">
       <slot name="navigation"/>
     </div>
 

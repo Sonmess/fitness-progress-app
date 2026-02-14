@@ -104,7 +104,7 @@
               <input
                 v-model.number="set.weight"
                 type="number"
-                step="0.5"
+                step="any"
                 :id="`weight-${index}`"
                 placeholder="Weight (kg, - for assistance)"
                 class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm"

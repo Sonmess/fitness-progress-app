@@ -9,7 +9,7 @@
           <p class="text-gray-400 text-sm max-w-xs">
             {{ appConfig.meta.perex }}
           </p>
-          <p>Logged in as : {{ user.email }}</p>
+          <p v-if="user">Logged in as : {{ user.email }}</p>
         </div>
 
         <!-- Middle Section: Quick Links -->

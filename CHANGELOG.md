@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Weight input fields now accept negative values to support assisted exercises (e.g., -10kg for 10kg assistance)
-- Standardized weight input step to 0.5kg across all workout logging interfaces
+- Weight inputs now support any decimal increment (e.g., 0.25kg, 0.5kg, 2.5kg) for precise tracking
 - Updated placeholder text to indicate negative weights represent assistance
 
 ### Fixed

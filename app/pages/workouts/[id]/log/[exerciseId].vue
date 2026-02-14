@@ -104,9 +104,9 @@
               <input
                 v-model.number="set.weight"
                 type="number"
-                step="any"
+                step="0.5"
                 :id="`weight-${index}`"
-                placeholder="Weight (kg)"
+                placeholder="Weight (kg, - for assistance)"
                 class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm"
               />
             </div>
@@ -179,7 +179,8 @@ onMounted(() => {
     fetchLogById(logToEditId as string);
   }
   findPersonalRecordSet(exerciseId);
-  fetchRecentLogForExercise(exerciseId);
+  // Pass logToEditId to exclude current log from recent logs
+  fetchRecentLogForExercise(exerciseId, logToEditId);
 });
 
 // If in edit mode, pre-fill the form once the log has been fetched
@@ -213,7 +214,7 @@ const removeSet = (index: number) => {
 
 const saveLog = async () => {
   if (!exercise.value) return;
-  const validSets = sets.value.filter((s) => s.reps > 0 && s.weight >= 0);
+  const validSets = sets.value.filter((s) => s.reps > 0);
   if (validSets.length === 0) {
     alert('Please enter reps and weight for at least one set.');
     return;

@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced contact page with new icons and BasePage
 - Refactored project structure for better organization
 
+### Changed
+- Weight input fields now accept negative values to support assisted exercises (e.g., -10kg for 10kg assistance)
+- Standardized weight input step to 0.5kg across all workout logging interfaces
+- Updated placeholder text to indicate negative weights represent assistance
+
+### Fixed
+- Recent Log now correctly excludes current session when logging/editing workouts
+- Recent Log displays previous workout session as reference point instead of current changes
+
 ### Security
 - Implemented global authentication middleware
 - Protected routes requiring user authentication

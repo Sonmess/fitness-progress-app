@@ -19,7 +19,7 @@
                 </div>
                 <div class="flex-1">
                   <label :for="`edit-weight-${index}`" class="sr-only">Weight</label>
-                  <input v-model.number="set.weight" type="number" step="any" :id="`edit-weight-${index}`" placeholder="Weight (kg)" class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm">
+                  <input v-model.number="set.weight" type="number" step="0.5" :id="`edit-weight-${index}`" placeholder="Weight (kg, - for assistance)" class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm">
                 </div>
                 <button @click="removeSet(index)" type="button" class="text-red-400 hover:text-red-300">&times;</button>
               </div>
@@ -68,7 +68,7 @@ const removeSet = (index: number) => {
 };
 
 const saveChanges = () => {
-  const validSets = editableSets.value.filter(s => s.reps > 0 && s.weight >= 0);
+  const validSets = editableSets.value.filter(s => s.reps > 0);
   emit('save', validSets);
 };
 </script>

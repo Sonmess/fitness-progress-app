@@ -107,27 +107,32 @@ export const useWorkoutLogs = () => {
     }
   };
 
-  const fetchRecentLogForExercise = async (exerciseId: string) => {
+  const fetchRecentLogForExercise = async (exerciseId: string, excludeLogId?: string) => {
     if (!userId.value) return;
     recentLog.value = null;
     try {
       isLoading.value = true;
+      // Fetch 2 logs to handle exclusion case where we might need the second one
       const q = query(
         logsCollection,
         where('userId', '==', userId.value),
         where('exerciseId', '==', exerciseId),
         orderBy('date', 'desc'),
-        limit(1)
+        limit(2)
       );
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty && querySnapshot.docs[0]) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        recentLog.value = {
-          id: doc.id,
-          ...data,
-          date: (data.date as Timestamp).toDate(),
-        } as WorkoutLog;
+      if (!querySnapshot.empty) {
+        // Filter out the excluded log if provided
+        const filteredDocs = querySnapshot.docs.filter(doc => doc.id !== excludeLogId);
+        if (filteredDocs.length > 0 && filteredDocs[0]) {
+          const doc = filteredDocs[0];
+          const data = doc.data();
+          recentLog.value = {
+            id: doc.id,
+            ...data,
+            date: (data.date as Timestamp).toDate(),
+          } as WorkoutLog;
+        }
       }
     } catch (error) {
       console.error('Error fetching recent log: ', error);

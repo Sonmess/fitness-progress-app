@@ -90,7 +90,7 @@
                       type="number"
                       step="0.5"
                       :id="`weight-${index}`"
-                      placeholder="Weight (kg)"
+                      placeholder="Weight (kg, - for assistance)"
                       class="block w-full bg-gray-800 border-gray-700 text-white rounded-md shadow-sm sm:text-sm"
                     />
                   </div>
@@ -207,7 +207,7 @@ const saveLog = async () => {
       sessionId: props.sessionId,
       exerciseId: selectedExercise.value.id,
       exerciseName: selectedExercise.value.name,
-      sets: sets.value.filter((s) => s.reps > 0 && s.weight > 0), // Filter out empty sets
+      sets: sets.value.filter((s) => s.reps > 0), // Filter out sets without reps
     };
     await addWorkoutLog(logData);
     resetForm();

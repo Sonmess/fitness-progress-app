@@ -9,6 +9,7 @@
           <p class="text-gray-400 text-sm max-w-xs">
             {{ appConfig.meta.perex }}
           </p>
+          <p>Logged in as : {{ user.email }}</p>
         </div>
 
         <!-- Middle Section: Quick Links -->
@@ -82,7 +83,9 @@
 
 <script setup lang="ts">
 import {NAV_ITEMS} from '~/constants/routes';
+import {useAuth} from "#imports";
 
 const appConfig = useAppConfig();
 const currentYear = new Date().getFullYear();
+const {user} = useAuth();
 </script>

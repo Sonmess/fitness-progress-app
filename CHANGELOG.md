@@ -24,10 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced contact page with new icons and BasePage
 - Refactored project structure for better organization
 
+### Added
+- Personal records table now displays repetitions performed at max weight
+- Personal records table now shows the date each record was achieved
+
 ### Changed
 - Weight input fields now accept negative values to support assisted exercises (e.g., -10kg for 10kg assistance)
 - Weight inputs now support any decimal increment (e.g., 0.25kg, 0.5kg, 2.5kg) for precise tracking
 - Updated placeholder text to indicate negative weights represent assistance
+- Enhanced personal record tracking logic to prioritize most reps when weights are equal
 
 ### Fixed
 - Recent Log now correctly excludes current session when logging/editing workouts

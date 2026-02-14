@@ -14,6 +14,8 @@ export interface PersonalRecord {
   exerciseName: string;
   bodyPartName: string;
   maxWeight: number;
+  maxReps: number;
+  achievedDate: Date;
 }
 
 const WORKOUT_LOGS_COLLECTION = "workoutLogs";
@@ -66,15 +68,26 @@ export const useProgress = () => {
       const q = query(logsCollection, where("userId", "==", userId.value));
       const querySnapshot = await getDocs(q);
 
-      // Step 3: Process the logs to find the max weight for each exercise.
+      // Step 3: Process the logs to find the max weight, reps, and date for each exercise.
       // We use a Map for efficient lookups.
-      const maxWeights = new Map<string, number>();
+      const maxRecords = new Map<string, { weight: number; reps: number; date: Date }>();
       querySnapshot.forEach((doc) => {
         const log = doc.data() as WorkoutLog;
+        const logDate = log.date?.toDate ? log.date.toDate() : new Date(log.date);
+
         log.sets.forEach((set) => {
-          const currentMax = maxWeights.get(log.exerciseId) || 0;
-          if (set.weight > currentMax) {
-            maxWeights.set(log.exerciseId, set.weight);
+          const currentRecord = maxRecords.get(log.exerciseId);
+
+          // Update if: no record exists, higher weight, or same weight but more reps, or same weight/reps but more recent
+          if (!currentRecord ||
+              set.weight > currentRecord.weight ||
+              (set.weight === currentRecord.weight && set.reps > currentRecord.reps) ||
+              (set.weight === currentRecord.weight && set.reps === currentRecord.reps && logDate > currentRecord.date)) {
+            maxRecords.set(log.exerciseId, {
+              weight: set.weight,
+              reps: set.reps,
+              date: logDate
+            });
           }
         });
       });
@@ -84,14 +97,16 @@ export const useProgress = () => {
       // We iterate through our pre-sorted `exercises` array to build the final list.
       // This ensures the final output is also sorted correctly.
       exercises.value.forEach((exercise) => {
-        const maxWeight = maxWeights.get(exercise.id);
+        const record = maxRecords.get(exercise.id);
         // Only include exercises for which a record was found.
-        if (maxWeight && maxWeight > 0) {
+        if (record && record.weight > 0) {
           records.push({
             exerciseId: exercise.id,
             exerciseName: exercise.name,
             bodyPartName: exercise.bodyPartName,
-            maxWeight: maxWeight,
+            maxWeight: record.weight,
+            maxReps: record.reps,
+            achievedDate: record.date,
           });
         }
       });

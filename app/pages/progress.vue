@@ -22,11 +22,17 @@
       <table v-else-if="personalRecords.length > 0" class="min-w-full">
         <thead class="bg-gray-800">
         <tr>
-          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider">
+          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider w-2/5">
             Exercise
           </th>
-          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider">
+          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider w-1/5">
             Max Weight
+          </th>
+          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider w-1/5">
+            Reps
+          </th>
+          <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider w-1/5">
+            Date
           </th>
         </tr>
         </thead>
@@ -37,7 +43,7 @@
         >
           <tr class="border-t border-gray-800">
             <th
-                colspan="2"
+                colspan="4"
                 scope="colgroup"
                 class="bg-gray-800/50 p-3 text-left text-sm font-semibold text-white"
             >
@@ -45,11 +51,17 @@
             </th>
           </tr>
           <tr v-for="record in group.records" :key="record.exerciseId" class="hover:bg-gray-800/30 transition-colors">
-            <td class="whitespace-nowrap p-3 text-sm font-medium text-white">
+            <td class="p-3 text-sm font-medium text-white w-2/5">
               {{ record.exerciseName }}
             </td>
-            <td class="whitespace-nowrap p-3 text-lg font-bold text-white">
+            <td class="whitespace-nowrap p-3 text-lg font-bold text-white w-1/5">
               {{ record.maxWeight }} kg
+            </td>
+            <td class="whitespace-nowrap p-3 text-sm text-gray-300 w-1/5">
+              {{ record.maxReps }}
+            </td>
+            <td class="whitespace-nowrap p-3 text-sm text-gray-400 w-1/5">
+              {{ formatDate(record.achievedDate) }}
             </td>
           </tr>
         </template>
@@ -85,4 +97,13 @@ const groupedRecords = computed(() => {
 
   return groups;
 });
+
+// Format date for display
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
 </script>

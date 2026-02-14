@@ -73,6 +73,15 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
+    // Clear user-specific state from all composables to prevent data leakage
+    const { clearSessionState } = useWorkoutSessions();
+    const { clearLogState } = useWorkoutLogs();
+    const { clearProgressState } = useProgress();
+
+    clearSessionState();
+    clearLogState();
+    clearProgressState();
+
     await signOut(auth);
     // Redirect to login page after logout
     await router.push({ name: ROUTE_NAMES.LOGIN });

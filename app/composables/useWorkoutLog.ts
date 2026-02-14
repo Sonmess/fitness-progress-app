@@ -200,6 +200,17 @@ export const useWorkoutLogs = () => {
     }
   };
 
+  /**
+   * Clears all workout log state. Called during logout to prevent data leakage between users.
+   */
+  const clearLogState = () => {
+    logs.value = [];
+    log.value = null;
+    recentLog.value = null;
+    isLoading.value = false;
+    currentSessionId.value = null;
+  };
+
   // --- Public API ---
   return {
     logs,
@@ -212,5 +223,6 @@ export const useWorkoutLogs = () => {
     addWorkoutLog,
     updateWorkoutLog,
     deleteWorkoutLog,
+    clearLogState,
   };
 };

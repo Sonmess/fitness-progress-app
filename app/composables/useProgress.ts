@@ -141,6 +141,17 @@ export const useProgress = () => {
     }
   };
 
+  /**
+   * Clears all progress state. Called during logout to prevent data leakage between users.
+   */
+  const clearProgressState = () => {
+    personalRecords.value = [];
+    personalRecordSet.value = null;
+    isLoading.value = false;
+    isPrSetLoading.value = false;
+    lastCalculatedUserId.value = null;
+  };
+
   // --- Public API ---
   return {
     personalRecords,
@@ -149,5 +160,6 @@ export const useProgress = () => {
     personalRecordSet,
     calculateAllPersonalRecords,
     findPersonalRecordSet,
+    clearProgressState,
   };
 };

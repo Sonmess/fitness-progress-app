@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Recent Log now correctly excludes current session when logging/editing workouts
 - Recent Log displays previous workout session as reference point instead of current changes
+- **SECURITY:** Fixed critical data leakage bug where user data persisted after logout, allowing next logged-in user to see previous user's workout data, logs, and personal records
 
 ### Security
 - Implemented global authentication middleware

@@ -264,6 +264,15 @@ export const useWorkoutSessions = () => {
     }
   };
 
+  /**
+   * Clears all session state. Called during logout to prevent data leakage between users.
+   */
+  const clearSessionState = () => {
+    sessions.value = [];
+    session.value = null;
+    isLoading.value = false;
+  };
+
   // --- Public API ---
   return {
     session,
@@ -274,5 +283,6 @@ export const useWorkoutSessions = () => {
     addWorkoutSession,
     updateWorkoutSession,
     deleteWorkoutSession,
+    clearSessionState,
   };
 };

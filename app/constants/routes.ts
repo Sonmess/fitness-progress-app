@@ -25,6 +25,7 @@ export const ROUTE_NAMES = {
 
   // Progress
   PROGRESS: 'progress',
+  PROGRESS_EXERCISE: 'progress-exerciseId',
 } as const;
 
 /**
@@ -48,6 +49,7 @@ export const ROUTE_PATHS = {
 
   // Progress
   PROGRESS: '/progress',
+  progressExercise: (exerciseId: string) => `/progress/${exerciseId}`
 } as const;
 
 /**
@@ -110,4 +112,9 @@ export const buildRoute = {
     name: ROUTE_NAMES.WORKOUT_LOG,
     params: { id: sessionId, exerciseId },
   }),
+
+  progressExercise: (exerciseId: string) => ({
+    name: ROUTE_NAMES.PROGRESS_EXERCISE,
+    params: { exerciseId },
+  })
 } as const;

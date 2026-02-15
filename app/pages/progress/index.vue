@@ -12,14 +12,20 @@
         <p class="text-gray-400">Calculating all personal records...</p>
       </div>
 
-      <div v-else-if="personalRecords.length === 0" class="text-center py-20">
+      <div
+          v-else-if="personalRecords.length === 0"
+          class="text-center py-20"
+      >
         <p class="text-gray-400">No personal records found.</p>
         <p class="text-gray-500 text-sm mt-1">
           Log some workouts to see your progress here!
         </p>
       </div>
 
-      <table v-else-if="personalRecords.length > 0" class="min-w-full">
+      <table
+          v-else-if="personalRecords.length > 0"
+          class="min-w-full"
+      >
         <thead class="bg-gray-800">
         <tr>
           <th scope="col" class="p-3 text-left text-xs font-medium uppercase text-gray-400 tracking-wider w-2/5">
@@ -50,9 +56,17 @@
               {{ group.bodyPartName }}
             </th>
           </tr>
-          <tr v-for="record in group.records" :key="record.exerciseId" class="hover:bg-gray-800/30 transition-colors">
+          <tr
+              v-for="record in group.records"
+              :key="record.exerciseId"
+              class="hover:bg-gray-800/30 transition-colors"
+          >
             <td class="p-3 text-sm font-medium text-white w-2/5">
-              {{ record.exerciseName }}
+              <NuxtLink
+                  :to="buildRoute.progressExercise(record.exerciseId)"
+                  class="hover:underline">
+                {{ record.exerciseName }}
+              </NuxtLink>
             </td>
             <td class="whitespace-nowrap p-3 text-lg font-bold text-white w-1/5">
               {{ record.maxWeight }} kg
@@ -73,6 +87,7 @@
 </template>
 
 <script setup lang="ts">
+import { buildRoute } from "~/constants/routes";
 import {onMounted, computed} from "vue";
 import type {PersonalRecord} from "~/composables/useProgress";
 

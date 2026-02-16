@@ -65,13 +65,13 @@ export const useExercises = () => {
    * Gets a single exercise by ID. Checks cache first, then fetches from Firestore if needed.
    * @param exerciseId The exercise ID to fetch
    */
-  const getExerciseById = async (exerciseId: string) => {
+  const getExerciseById = async (exerciseId: string): Promise<Exercise | null> => {
     try {
       // First, check if we have it in the cached exercises array
       const cachedExercise = exercises.value.find((ex) => ex.id === exerciseId);
       if (cachedExercise) {
         exercise.value = cachedExercise;
-        return;
+        return exercise.value;
       }
 
       // If not in cache, fetch from Firestore
@@ -83,11 +83,15 @@ export const useExercises = () => {
           id: docSnap.id,
           ...docSnap.data(),
         } as Exercise;
+        return exercise.value;
       } else {
-        throw new Error("Exercise not found by ID: " + exerciseId);
+        exercise.value = null;
+        return null;
       }
     } catch (error) {
       console.error("Error fetching exercise", error);
+      exercise.value = null;
+      return exercise.value;
     } finally {
       isLoading.value = false;
     }

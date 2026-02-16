@@ -83,7 +83,6 @@
 
 <script setup lang="ts">
 import {NAV_ITEMS} from '~/constants/routes';
-import {useAuth} from "#imports";
 
 const appConfig = useAppConfig();
 const currentYear = new Date().getFullYear();

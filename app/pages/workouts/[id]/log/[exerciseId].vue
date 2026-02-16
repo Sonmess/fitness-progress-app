@@ -142,6 +142,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import type { NewWorkoutLogData, Set } from '~/types';
+import {buildRoute} from "~/constants/routes";
 
 const route = useRoute();
 const router = useRouter();
@@ -171,8 +172,12 @@ const { userId } = useAuth();
 const sets = ref<Set[]>([{ reps: 0, weight: 0 }]);
 
 // Fetch data on page load based on mode
-onMounted(() => {
-  getExerciseById(exerciseId);
+onMounted(async () => {
+  const currentExercise = await getExerciseById(exerciseId);
+  if (!currentExercise) {
+    console.log('Exercise not found');
+    router.push(buildRoute.workoutDetail(sessionId));
+  }
 
   if (isEditMode.value) {
     // --- EDIT MODE ---

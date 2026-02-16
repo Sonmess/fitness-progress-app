@@ -91,8 +91,12 @@ const exerciseId = route.params.id as string;
 
 const isEditModalOpen = ref(false);
 
-onMounted(() => {
-  getExerciseById(exerciseId);
+onMounted(async () => {
+  const currentExercise = await getExerciseById(exerciseId);
+  if (!currentExercise) {
+    console.log('Exercise not found. Redirecting to exercises list.')
+    router.push({name: ROUTE_NAMES.EXERCISES});
+  }
 });
 
 const handleDelete = async () => {

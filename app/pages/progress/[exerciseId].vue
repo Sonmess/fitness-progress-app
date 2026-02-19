@@ -27,11 +27,15 @@
 
       <div class="tabs-content">
         <div class="tab-content" v-if="selectedTab === 'table'">
-          <ProgressTable :exerciseId="exerciseId" />
+          <ProgressTable
+              :exerciseId="exerciseId"
+          />
         </div>
 
         <div class="tab-content" v-else>
-          <ProgressGraph />
+          <ProgressGraph
+              :exerciseId="exerciseId"
+          />
         </div>
       </div>
     </div>

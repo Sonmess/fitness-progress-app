@@ -42,7 +42,7 @@
           ]"
       >
         <td class="p-3 text-sm text-gray-300 whitespace-nowrap">
-          {{ formatDate(log.date) }}
+          {{ formatDateShort(log.date) }}
         </td>
         <td
             v-for="index in maxSets"
@@ -58,7 +58,7 @@
           {{ formatBestSet(log.sets) }}
         </td>
         <td class="p-3 text-sm text-gray-300 whitespace-nowrap">
-          {{ calculateVolume(log.sets) }} kg
+          {{ calculateVolumeFormatted(log.sets) }} kg
         </td>
       </tr>
       </tbody>
@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted} from "vue";
-import type {WorkoutLog, Set} from "~/types";
+import type {WorkoutLog} from "~/types";
 
 const props = defineProps<{
   exerciseId: string;
@@ -87,8 +87,8 @@ const maxVolumeLogId = computed(() => {
   if (exerciseLogs.value.length === 0) return null;
 
   const logWithMaxVolume = exerciseLogs.value.reduce((max, log) => {
-    const currentVolume = calculateVolume(log.sets);
-    const maxVolume = calculateVolume(max.sets);
+    const currentVolume = calculateVolumeFormatted(log.sets);
+    const maxVolume = calculateVolumeFormatted(max.sets);
     return parseFloat(currentVolume) > parseFloat(maxVolume) ? log : max;
   });
 
@@ -98,25 +98,6 @@ const maxVolumeLogId = computed(() => {
 onMounted(async () => {
   exerciseLogs.value = await fetchLogsForExercise(props.exerciseId);
 });
-
-const formatDate = (date: Date) => {
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = (date.getFullYear() % 100).toString().padStart(2, '0');
-  return `${day}.${month}.${year}`;
-};
-
-const formatBestSet = (sets: Set[]) => {
-  if (sets.length === 0) return '—';
-  const best = sets.reduce((max, set) => {
-    return set.weight > max.weight ? set : max;
-  });
-  return `${best.reps}×${best.weight}`;
-};
-
-const calculateVolume = (sets: Set[]) => {
-  return sets.reduce((total, set) => total + (set.reps * set.weight), 0).toFixed(0);
-};
 </script>
 
 <style scoped>

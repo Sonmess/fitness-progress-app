@@ -5,10 +5,23 @@ A comprehensive fitness tracking application built with Nuxt 4, Vue 3, and Fireb
 ## Features
 
 - 🏋️ **Exercise Management** - Browse and manage exercises with detailed information about equipment and target body parts
-- 📊 **Progress Tracking** - Monitor your fitness journey with detailed progress metrics
-- 💪 **Workout Logging** - Log workout sessions and track your performance
+- 📊 **Progress Tracking** - Monitor your fitness journey with comprehensive analytics:
+  - Personal records table with max weight, reps, and achievement dates
+  - Exercise-specific progress pages with detailed workout history
+  - Interactive graphs showing max weight and volume progression over time
+  - Tabular view with expandable set details and volume calculations
+  - Visual highlighting of best performances
+- 💪 **Workout Logging** - Log workout sessions and track your performance with:
+  - Set-by-set tracking (reps and weight)
+  - Support for assisted exercises (negative weights)
+  - Decimal weight increments (0.25kg, 0.5kg, etc.)
+  - Recent workout reference for consistency
 - 🔐 **User Authentication** - Secure authentication powered by Firebase Auth
-- 📱 **Responsive Design** - Beautiful UI built with Tailwind CSS
+- 📱 **Responsive Design** - Beautiful UI built with Tailwind CSS with:
+  - Dark theme optimized for gym lighting
+  - Mobile-first approach with horizontal scrolling for large datasets
+  - Custom styled scrollbars matching the app theme
+  - Dynamic chart sizing for optimal mobile viewing
 
 ## Tech Stack
 
@@ -17,6 +30,7 @@ A comprehensive fitness tracking application built with Nuxt 4, Vue 3, and Fireb
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Backend:** [Firebase](https://firebase.google.com/) (Authentication & Firestore)
 - **Language:** TypeScript
+- **Charts:** [Chart.js](https://www.chartjs.org/) with [vue-chartjs](https://vue-chartjs.org/)
 
 ## Project Structure
 
@@ -27,16 +41,33 @@ app/
 │   ├── exercises/   # Exercise-related components
 │   ├── icons/       # Icon components
 │   ├── modals/      # Modal dialogs
+│   ├── progress/    # Progress tracking components
+│   │   ├── LineGraph.vue        # Reusable Chart.js wrapper
+│   │   ├── ProgressGraph.vue    # Progress graphs container
+│   │   └── ProgressTable.vue    # Workout history table
 │   └── ui/          # UI components
+│       └── navigation/
+│           ├── BackLink.vue     # Back navigation component
+│           └── BaseTabs.vue     # Tab navigation component
 ├── composables/     # Vue composables for state management
 │   ├── useAuth.ts
 │   ├── useExercises.ts
 │   ├── useProgress.ts
 │   └── useWorkoutLog.ts
-├── pages/           # Route pages
+├── constants/       # Application constants
+│   └── routes.ts    # Route definitions and builders
+├── pages/           # Route pages (file-based routing)
+│   ├── exercises/
+│   ├── progress/
+│   │   ├── [exerciseId].vue  # Exercise-specific progress
+│   │   └── index.vue          # Progress overview
+│   └── workouts/
 ├── plugins/         # Nuxt plugins (Firebase init)
 ├── types/           # TypeScript type definitions
+│   └── index.ts
 └── utils/           # Utility functions
+    ├── date.ts      # Date formatting helpers
+    └── workout.ts   # Workout calculation helpers
 ```
 
 ## Prerequisites

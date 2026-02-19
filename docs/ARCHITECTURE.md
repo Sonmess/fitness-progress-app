@@ -2,226 +2,338 @@
 
 ## Overview
 
-The Fitness Progress App is built using modern web technologies with a focus on type safety, composability, and user experience. This document outlines the application architecture and key design decisions.
+Fitness Progress App is built with modern web technologies following Vue 3 Composition API patterns and Nuxt 4 conventions. The architecture emphasizes type safety, code reusability, and clear separation of concerns.
 
-## Technology Stack
+## Tech Stack
 
-- **Framework**: Nuxt 4 (Vue 3 meta-framework with SSR capabilities)
-- **Frontend**: Vue 3 with Composition API and TypeScript
-- **Styling**: Tailwind CSS for utility-first responsive design
-- **Backend**: Firebase (Firestore for database, Auth for authentication)
-- **State Management**: Vue composables for reactive state
+- **Framework:** Nuxt 4
+- **UI Library:** Vue 3 (Composition API)
+- **Styling:** Tailwind CSS
+- **Backend:** Firebase (Firestore + Authentication)
+- **Language:** TypeScript
+- **Charts:** Chart.js + vue-chartjs
+- **Package Manager:** npm/pnpm/yarn/bun
 
-## Application Structure
-
-### Directory Layout
+## Project Structure
 
 ```
 app/
-├── components/          # Vue components organized by feature
-│   ├── common/         # Shared components (BasePage, etc.)
+├── components/          # Vue components
+│   ├── common/         # Shared layout components
+│   │   ├── BaseFooter.vue
+│   │   ├── BaseHeader.vue
+│   │   └── BasePage.vue
 │   ├── exercises/      # Exercise-specific components
 │   ├── icons/          # SVG icon components
-│   ├── modals/         # Modal dialog components
+│   │   └── common/     # Common icons
+│   ├── modals/         # Modal dialogs
+│   ├── progress/       # Progress tracking components
+│   │   ├── LineGraph.vue
+│   │   ├── ProgressGraph.vue
+│   │   └── ProgressTable.vue
 │   └── ui/             # Reusable UI components
-├── composables/        # Reactive state management
+│       └── navigation/ # Navigation components
+│           ├── BackLink.vue
+│           └── BaseTabs.vue
+├── composables/        # Vue composables (state management)
+│   ├── useAuth.ts
+│   ├── useExercises.ts
+│   ├── useProgress.ts
+│   └── useWorkoutLog.ts
 ├── constants/          # Application constants
-├── layouts/            # Page layouts
-├── middleware/         # Route middleware (auth, etc.)
+│   └── routes.ts       # Route names and path builders
+├── middleware/         # Nuxt middleware
+│   └── auth.global.ts  # Global authentication middleware
 ├── pages/              # File-based routing
-├── plugins/            # Nuxt plugins (Firebase init)
+│   ├── exercises/
+│   │   ├── [id].vue
+│   │   └── index.vue
+│   ├── progress/
+│   │   ├── [exerciseId].vue  # Exercise-specific progress page
+│   │   └── index.vue          # Progress overview
+│   ├── workouts/
+│   │   ├── [id]/
+│   │   │   ├── add.vue
+│   │   │   ├── index.vue
+│   │   │   └── log/
+│   │   │       └── [exerciseId].vue
+│   │   └── index.vue
+│   ├── contact.vue
+│   ├── index.vue
+│   └── login.vue
+├── plugins/            # Nuxt plugins
+│   └── firebase.client.ts
 ├── types/              # TypeScript type definitions
+│   └── index.ts
 └── utils/              # Utility functions
+    ├── date.ts         # Date formatting utilities
+    └── workout.ts      # Workout calculation utilities
 ```
 
 ## Core Concepts
 
 ### 1. Composables Pattern
 
-The app uses Vue 3 composables for state management and business logic. Each composable encapsulates related functionality:
+Composables are reusable stateful logic functions following Vue 3 Composition API patterns. They manage:
+- State with `useState` (Nuxt's SSR-safe state management)
+- API calls to Firebase
+- Data transformations
+- Caching strategies
 
-- **`useAuth.ts`** - Authentication state and operations
-- **`useExercises.ts`** - Exercise data fetching and management
-- **`useBodyParts.ts`** - Body part categories management
-- **`useEquipment.ts`** - Equipment types management
-- **`useWorkoutLog.ts`** - Workout logging functionality
-- **`useWorkoutSessions.ts`** - Workout session management
-- **`useProgress.ts`** - Progress tracking and analytics
+**Example: `useWorkoutLog.ts`**
+```typescript
+export const useWorkoutLogs = () => {
+  const logs = useState<WorkoutLog[]>('workoutLogs', () => []);
+  const exerciseLogs = useState<Record<string, WorkoutLog[]>>('exerciseWorkoutLogs', () => ({}));
 
-#### Benefits of Composables:
-- Reusable across components
-- Testable in isolation
-- Type-safe with TypeScript
-- Reactive state management
-- Logical code organization
+  const fetchLogsForExercise = async (exerciseId: string, force = false): Promise<WorkoutLog[]> => {
+    // Caching logic
+    if (exerciseLogs.value[exerciseId] && !force) {
+      return exerciseLogs.value[exerciseId];
+    }
+    // Fetch and cache
+  };
 
-### 2. Firebase Integration
-
-Firebase services are initialized in `app/plugins/firebase.ts` and provided globally via Nuxt plugin system.
-
-#### Authentication
-- Firebase Auth handles user authentication
-- Auth state is managed via `useAuth` composable
-- Global middleware (`auth.global.ts`) protects routes
-- Auth ready promise ensures hydration before app initialization
-
-#### Firestore Database
-
-**Collections Structure:**
-
+  return { logs, fetchLogsForExercise, ... };
+};
 ```
-firestore/
-├── users/
-│   └── {userId}
-│       ├── nickname: string
-│       ├── email: string
-│       ├── role: string
-│       └── state: number
-├── exercises/
-│   └── {exerciseId}
-│       ├── name: string
-│       ├── description: string
-│       ├── bodyPartId: string
-│       ├── bodyPartName: string
-│       ├── equipment: string
-│       └── imageUrl: string
-├── bodyParts/
-│   └── {bodyPartId}
-│       ├── name: string
-│       └── imageUrl: string
-├── workoutSessions/
-│   └── {sessionId}
-│       ├── userId: string
-│       ├── title: string
-│       ├── date: Timestamp
-│       ├── notes: string
-│       ├── bodyPartIds: string[]
-│       └── bodyPartNames: string[]
-└── workoutLogs/
-    └── {logId}
-        ├── userId: string
-        ├── sessionId: string
-        ├── exerciseId: string
-        ├── exerciseName: string
-        ├── sets: Array<{reps: number, weight: number}>
-        ├── date: Timestamp
-        └── notes: string
-```
+
+### 2. Component Architecture
+
+#### Layout Components
+- `BasePage.vue` - Standard page wrapper with header, icon slot, and navigation slot
+- `BaseHeader.vue` - Navigation bar with authentication state
+- `BaseFooter.vue` - Footer with links
+
+#### Feature Components
+Components are organized by feature domain:
+- **exercises/** - Exercise browsing and management
+- **progress/** - Progress tracking, tables, and graphs
+- **workouts/** - Workout logging and session management
+- **ui/** - Reusable UI components (tabs, navigation, buttons, etc.)
 
 ### 3. Type System
 
-All data models are defined in `app/types/index.ts` with TypeScript interfaces:
+All data structures are defined in `types/index.ts`:
 
-- **`Exercise`** - Exercise definition
-- **`BodyPart`** - Body part category
-- **`WorkoutSession`** - Workout session metadata
-- **`WorkoutLog`** - Individual exercise log entry
-- **`Set`** - Single set (reps + weight)
-- **`UserProfile`** - User account information
+```typescript
+export interface WorkoutLog {
+  id: string;
+  userId: string;
+  sessionId: string;
+  exerciseId: string;
+  exerciseName: string;
+  sets: Set[];
+  date: Date;
+  notes?: string;
+}
 
-Helper types like `NewWorkoutLogData` exclude Firestore-generated fields for cleaner API.
+export interface Set {
+  reps: number;
+  weight: number;
+}
+```
 
-### 4. Routing & Navigation
+### 4. Routing
 
-- **File-based routing** via Nuxt pages directory
-- **Route constants** defined in `app/constants/routes.ts` for type-safe navigation
-- **Global auth middleware** checks authentication state before route access
-- **Page transitions** configured in `nuxt.config.ts`
+File-based routing with dynamic routes:
+- `/exercises` - List all exercises
+- `/exercises/[id]` - Exercise details
+- `/progress` - Personal records overview
+- `/progress/[exerciseId]` - Detailed progress for specific exercise
+- `/workouts` - Workout sessions list
+- `/workouts/[id]` - Workout session details
+- `/workouts/[id]/log/[exerciseId]` - Log exercise in session
 
-### 5. Component Architecture
+Route constants and builders in `constants/routes.ts`:
+```typescript
+export const ROUTE_NAMES = {
+  PROGRESS_EXERCISE: 'progress-exerciseId',
+  // ...
+};
 
-#### Common Components
+export const buildRoute = {
+  progressExercise: (exerciseId: string) => ({
+    name: ROUTE_NAMES.PROGRESS_EXERCISE,
+    params: { exerciseId },
+  })
+};
+```
 
-**`BasePage.vue`** - Standardized page wrapper with:
-- Consistent layout structure
-- Title and subtitle support
-- Optional action slots
-- Responsive design
+### 5. State Management
 
-**Benefits:**
-- Consistent UX across pages
-- Reduced code duplication
-- Easier maintenance
+**Global State:** Nuxt's `useState` composable provides SSR-safe global state
 
-#### Feature Components
+**Caching Strategy:**
+- Exercise data cached in `exercises` array
+- Workout logs cached per session in `currentSessionId`
+- Exercise-specific logs cached in `exerciseLogs` Record (key: exerciseId)
+- Cache invalidation via `force` parameter
+- State cleared on logout for security
 
-Organized by domain (exercises, workouts, etc.) for:
-- Clear separation of concerns
-- Easy feature discovery
-- Scalable codebase
+### 6. Utility Functions
 
-### 6. State Management
+Pure functions for common operations:
 
-Instead of Vuex/Pinia, the app uses:
-- **Composables** for shared reactive state
-- **Props/Emits** for component communication
-- **Provide/Inject** for dependency injection (Firebase instances)
+**`utils/date.ts`**
+- `formatDateShort(date)` - Returns "DD.MM.YY" format
+- `formatDateLong(date)` - Returns "Month Day, Year" format
 
-This approach provides:
-- Better TypeScript support
-- Simpler mental model
-- Less boilerplate
-- Tree-shakeable code
+**`utils/workout.ts`**
+- `calculateMaxWeight(sets)` - Finds maximum weight across sets
+- `calculateVolume(sets)` - Calculates total volume (sum of reps × weight)
+- `formatBestSet(sets)` - Returns best set as "reps×weight" string
+- `findBestSet(sets)` - Finds set with highest weight
 
-## Data Flow
+### 7. Data Flow
+
+```
+User Action
+    ↓
+Component Event Handler
+    ↓
+Composable Function
+    ↓
+Firebase API Call
+    ↓
+Update useState
+    ↓
+Reactive UI Update
+```
+
+**Example: Loading Exercise Progress**
+```
+User navigates to /progress/[exerciseId]
+    ↓
+ProgressGraph.vue onMounted()
+    ↓
+useWorkoutLogs().fetchLogsForExercise(exerciseId)
+    ↓
+Check cache → If miss, query Firestore
+    ↓
+Transform Timestamp → Date
+    ↓
+Store in exerciseLogs.value[exerciseId]
+    ↓
+Return WorkoutLog[]
+    ↓
+Component computes chart data
+    ↓
+LineGraph renders Chart.js visualization
+```
+
+## Features Architecture
+
+### Progress Tracking System
+
+**Components:**
+1. **ProgressTable** - Tabular view of workout history
+2. **ProgressGraph** - Parent component managing data fetching
+3. **LineGraph** - Reusable Chart.js wrapper
+
+**Data Flow:**
+```
+/progress/[exerciseId] page
+    ↓
+ProgressGraph component
+    ├─ Fetches logs via fetchLogsForExercise()
+    ├─ Transforms data into chart format
+    ├─ Computes labels, max weights, volumes
+    └─ Passes to child components
+        ├─ ProgressTable (when "Table" tab active)
+        └─ LineGraph × 2 (when "Graph" tab active)
+            ├─ Max Weight Progress
+            └─ Total Volume Progress
+```
+
+**Key Features:**
+- Dynamic table columns based on max sets performed
+- Highlighting of highest volume workout
+- Responsive charts with dynamic sizing
+- Horizontal scrolling for large datasets
+- Cached data fetching
 
 ### Authentication Flow
 
-```
-1. User lands on protected route
-2. auth.global.ts middleware runs
-3. Checks Firebase Auth state
-4. If not authenticated → redirect to /login
-5. If authenticated → allow access
-```
-
-### Workout Logging Flow
+**Middleware:** `auth.global.ts` protects all routes except login
 
 ```
-1. User creates workout session (useWorkoutSessions)
-2. Session saved to Firestore with metadata
-3. User logs exercises (useWorkoutLog)
-4. Each exercise log linked to session
-5. Progress calculated from historical logs (useProgress)
+Page Request
+    ↓
+auth.global.ts middleware
+    ↓
+Check useAuth().userId
+    ├─ Authenticated → Allow navigation
+    └─ Not authenticated → Redirect to /login
 ```
 
-## Configuration
-
-### Runtime Config
-
-Environment variables are exposed via `nuxt.config.ts` runtime config:
-- Firebase credentials loaded from `.env`
-- Public runtime config available client-side
-- Type-safe access via `useRuntimeConfig()`
-
-### Build Configuration
-
-- **Modules**: Tailwind CSS for styling
-- **Dev Server**: Port 3000 on localhost
-- **Page Transitions**: Out-in mode for smooth navigation
-- **TypeScript**: Strict mode enabled
-
-## Security Considerations
-
-1. **Authentication**: All protected routes require authentication
-2. **Firestore Rules**: (Should be configured in Firebase Console)
-   - Users can only access their own data
-   - Write operations validate user ownership
-3. **Environment Variables**: Sensitive config never committed to git
-4. **Type Safety**: TypeScript prevents common runtime errors
+**Logout Security:**
+- All composables expose `clearState()` functions
+- Called on logout to prevent data leakage
+- Clears: exercises, workout logs, progress data, session info
 
 ## Performance Optimizations
 
-- **Code Splitting**: Nuxt automatically splits code by route
-- **Lazy Loading**: Components loaded on-demand
-- **Firebase Caching**: Firestore uses local cache for offline support
-- **Composable Reactivity**: Only re-renders affected components
+1. **Caching:**
+   - Exercise list cached globally
+   - Workout logs cached per session and per exercise
+   - Prevents redundant Firebase queries
+
+2. **Computed Properties:**
+   - Chart data computed reactively from cached state
+   - Only recalculates when dependencies change
+
+3. **Dynamic Loading:**
+   - Components lazy-loaded via Nuxt auto-imports
+   - Charts only loaded when graph tab is active
+
+4. **Firebase Query Optimization:**
+   - Indexed queries (userId + exerciseId, userId + sessionId)
+   - Ordered results from database (orderBy 'date')
+   - Limited results where appropriate
+
+## Security
+
+1. **Authentication Middleware:**
+   - Global middleware protects all routes
+   - Only /login accessible without authentication
+
+2. **Firestore Security:**
+   - All queries filtered by `userId`
+   - Firestore rules enforce user-data isolation
+
+3. **State Management:**
+   - State cleared on logout
+   - No data persists between user sessions
+
+## Testing Considerations
+
+**Unit Tests (Future):**
+- Utility functions (`utils/date.ts`, `utils/workout.ts`)
+- Composable logic (mocked Firebase)
+- Component rendering (Vue Test Utils)
+
+**Integration Tests (Future):**
+- Authentication flow
+- Data fetching and caching
+- Navigation and routing
+
+## Deployment
+
+Built for serverless deployment on:
+- Vercel
+- Netlify
+- Firebase Hosting
+- Any Node.js hosting provider
+
+**Build Command:** `npm run build`
+**Preview:** `npm run preview`
 
 ## Future Considerations
 
-Potential improvements:
-- **Progressive Web App (PWA)**: Offline support, installability
-- **Analytics**: Track user engagement and feature usage
-- **Server-Side Rendering**: Improve initial load time and SEO
-- **Testing**: Unit tests for composables, E2E tests for critical flows
-- **CI/CD**: Automated testing and deployment pipeline
+1. **State Management:** Consider Pinia if complexity grows
+2. **Testing:** Add Vitest for unit tests, Playwright for E2E
+3. **PWA:** Add offline support with service workers
+4. **Internationalization:** Add i18n support
+5. **Analytics:** Track user engagement and feature usage
+6. **Dark Mode:** Toggle between light/dark themes (currently dark only)

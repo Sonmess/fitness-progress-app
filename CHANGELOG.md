@@ -17,27 +17,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Common BasePage component for consistent layouts
 - Page transitions for improved UX
 - Responsive design with Tailwind CSS
+- **Exercise Progress Page** - New dedicated page at `/progress/[exerciseId]` showing detailed workout history
+- **Progress Table Component** - Displays all workout logs in expandable table format with:
+  - Dynamic columns based on maximum sets performed
+  - Date, individual set details (reps×weight), best set, and total volume
+  - Zebra striping for improved readability
+  - Highlighted row for workout with highest volume (indigo left border)
+  - Custom styled horizontal scrollbar
+- **Progress Graph Components** - Visual progress tracking with Chart.js:
+  - Max Weight Progress graph showing strength progression over time
+  - Total Volume Progress graph showing work capacity trends
+  - Dynamic sizing: width and height scale with number of data points
+  - Horizontal scrolling for datasets with many entries
+  - Smooth curves with filled area under line
+- **Tab Navigation Component** (`BaseTabs`) - Reusable tab switcher with icon support
+- **Utility Functions** - Extracted reusable helpers:
+  - `utils/date.ts` - `formatDateShort()`, `formatDateLong()` for consistent date formatting
+  - `utils/workout.ts` - `calculateMaxWeight()`, `calculateVolume()`, `formatBestSet()`, `findBestSet()`, `formatSet()` for workout calculations
+- Chart.js and vue-chartjs integration for data visualization
+- Personal records table now displays repetitions performed at max weight
+- Personal records table now shows the date each record was achieved
 
 ### Changed
 - Updated exercises pages to use CommonBasePage
 - Improved table structure on progress page
 - Enhanced contact page with new icons and BasePage
 - Refactored project structure for better organization
-
-### Added
-- Personal records table now displays repetitions performed at max weight
-- Personal records table now shows the date each record was achieved
-
-### Changed
 - Weight input fields now accept negative values to support assisted exercises (e.g., -10kg for 10kg assistance)
 - Weight inputs now support any decimal increment (e.g., 0.25kg, 0.5kg, 2.5kg) for precise tracking
 - Updated placeholder text to indicate negative weights represent assistance
 - Enhanced personal record tracking logic to prioritize most reps when weights are equal
+- **Refactored `getExerciseById`** composable to return `Promise<Exercise | null>` for better error handling
+- Exercise names in progress table now link to detailed exercise progress page
+- Date format standardized to DD.MM.YY (e.g., "09.02.26") across table and graphs
 
 ### Fixed
 - Recent Log now correctly excludes current session when logging/editing workouts
 - Recent Log displays previous workout session as reference point instead of current changes
 - **SECURITY:** Fixed critical data leakage bug where user data persisted after logout, allowing next logged-in user to see previous user's workout data, logs, and personal records
+- Fixed invalid exerciseId handling in progress pages with proper async/await and redirects
 
 ### Security
 - Implemented global authentication middleware

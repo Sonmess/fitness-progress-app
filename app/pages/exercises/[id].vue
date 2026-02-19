@@ -5,71 +5,64 @@
       :description="exercise.bodyPartName"
   >
     <template #navigation>
-      <div class="-mb-4">
-        <NuxtLink
-            :to="{ name: 'exercises' }"
-            class="inline-flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300"
-        >
-          <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 mr-2"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-          >
-            <path
-                fill-rule="evenodd"
-                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                clip-rule="evenodd"
-            />
-          </svg>
-          Back to Exercises
-        </NuxtLink>
-      </div>
+      <BackLink :routeName="ROUTE_NAMES.EXERCISES">Back to exercises</BackLink>
     </template>
 
     <template #actions>
       <div class="flex flex-row justify-center items-center gap-4">
         <button
-            @click="isEditModalOpen = true"
             type="button"
             class="inline-flex flex-grow items-center justify-center rounded-md border border-transparent bg-yellow-500 px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-yellow-600"
+            @click="isEditModalOpen = true"
         >
           Edit
         </button>
         <button
-            @click="handleDelete"
             type="button"
             class="inline-flex flex-grow items-center justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+            @click="handleDelete"
         >
           Delete
         </button>
       </div>
     </template>
 
-    <div v-if="exercise" class="details-container">
+    <div
+        v-if="exercise"
+        class="details-container"
+    >
       <!-- Exercise Details -->
       <div class="flex flex-col gap-2 text-gray-300">
         <div v-if="exercise.description">
-          <h2 class="font-semibold text-indigo-400">Description</h2>
+          <h2 class="font-semibold text-indigo-400">
+            Description
+          </h2>
           <p>{{ exercise.description }}</p>
         </div>
 
         <div>
-          <h2 class="font-semibold text-indigo-400">Equipment</h2>
+          <h2 class="font-semibold text-indigo-400">
+            Equipment
+          </h2>
           <p>{{ exercise.equipment || "N/A" }}</p>
         </div>
 
         <div v-if="exercise.imageUrl">
-          <h2 class="font-semibold text-indigo-400">Visual Guide</h2>
+          <h2 class="font-semibold text-indigo-400">
+            Visual Guide
+          </h2>
           <img
               :src="exercise.imageUrl"
               alt="Image of {{ exercise.name }}"
               class="mt-2 rounded-lg border border-gray-700 max-w-sm"
-          />
+          >
         </div>
       </div>
     </div>
-    <div v-else class="p-8 text-center text-gray-400">
+    <div
+        v-else
+        class="p-8 text-center text-gray-400"
+    >
       Loading exercise details...
     </div>
 
@@ -87,6 +80,8 @@
 <script setup lang="ts">
 import {onMounted, ref} from "vue";
 import type {NewExerciseData} from "~/types";
+import BackLink from "~/components/ui/navigation/BackLink.vue";
+import {ROUTE_NAMES} from "~/constants/routes";
 
 const {exercise, getExerciseById, deleteExercise, updateExerciseById} =
     useExercises();
@@ -96,8 +91,12 @@ const exerciseId = route.params.id as string;
 
 const isEditModalOpen = ref(false);
 
-onMounted(() => {
-  getExerciseById(exerciseId);
+onMounted(async () => {
+  const currentExercise = await getExerciseById(exerciseId);
+  if (!currentExercise) {
+    console.log('Exercise not found. Redirecting to exercises list.')
+    router.push({name: ROUTE_NAMES.EXERCISES});
+  }
 });
 
 const handleDelete = async () => {

@@ -1,4 +1,3 @@
-import { ref } from 'vue';
 import {
   collection,
   addDoc,
@@ -24,6 +23,7 @@ export const useWorkoutLogs = () => {
   const recentLog = useState<WorkoutLog | null>('recentWorkoutLog', () => null);
   const isLoading = useState<boolean>('workoutLogsLoading', () => false);
   const currentSessionId = useState<string | null>('currentLogsSessionId', () => null);
+  const exerciseLogs = useState<Record<string, WorkoutLog[]>>('exerciseWorkoutLogs', () => ({}));
 
   const { userId } = useAuth();
   const db = getFirestore();
@@ -142,6 +142,48 @@ export const useWorkoutLogs = () => {
   };
 
   /**
+   * Fetches all workout logs for a specific exercise across all sessions.
+   * @param exerciseId The exercise ID to fetch logs for
+   * @param force If true, forces a refresh even if data is already cached
+   */
+  const fetchLogsForExercise = async (exerciseId: string, force = false): Promise<WorkoutLog[]>=> {
+    if (!userId.value) return [];
+
+    // Check if we have cached data for this exercise
+    if (exerciseLogs.value[exerciseId] && !force) {
+      return exerciseLogs.value[exerciseId];
+    }
+
+    try {
+      isLoading.value = true;
+      const q = query(
+          logsCollection,
+          where('userId', '==', userId.value),
+          where('exerciseId', '==', exerciseId),
+          orderBy('date', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const fetchedLogs = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: (data.date as Timestamp).toDate(),
+        } as WorkoutLog;
+      });
+
+      // Cache the results
+      exerciseLogs.value[exerciseId] = fetchedLogs;
+      return fetchedLogs;
+    } catch (error) {
+      console.error('Error fetching workout logs for exercise: ', error);
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
    * Adds a new workout log. Requires user to be authenticated.
    * @param logData The workout log data (userId and date are automatically added)
    * @returns The newly created WorkoutLog
@@ -209,6 +251,7 @@ export const useWorkoutLogs = () => {
     recentLog.value = null;
     isLoading.value = false;
     currentSessionId.value = null;
+    exerciseLogs.value = {};
   };
 
   // --- Public API ---
@@ -220,6 +263,7 @@ export const useWorkoutLogs = () => {
     fetchLogsForSession,
     fetchLogById, // Expose new function for the edit page
     fetchRecentLogForExercise,
+    fetchLogsForExercise,
     addWorkoutLog,
     updateWorkoutLog,
     deleteWorkoutLog,

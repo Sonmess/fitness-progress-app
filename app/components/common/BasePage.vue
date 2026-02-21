@@ -8,7 +8,7 @@
 
     <div v-if="title || $slots.icon" class="page-header flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <slot name="icon" />
+        <slot name="icon"/>
         <h1
             v-if="title"
             class="text-2xl font-bold text-white"
@@ -16,6 +16,12 @@
           {{ title }}
         </h1>
       </div>
+      <p
+          v-if="subtitle"
+          class="text-lg text-indigo-400 font-semibold"
+      >
+        {{ subtitle }}
+      </p>
       <p
           v-if="description"
           class="text-sm text-gray-400"
@@ -32,7 +38,7 @@
     </div>
 
     <div class="page-content">
-      <slot />
+      <slot/>
     </div>
   </section>
 </template>
@@ -41,6 +47,7 @@
 interface Props {
   title?: string;
   description?: string;
+  subtitle?: string;
 }
 
 defineProps<Props>();

@@ -7,7 +7,10 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "vitest --reporter=verbose",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
@@ -19,6 +22,10 @@
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
-    "baseline-browser-mapping": "^2.9.19"
+    "@vitest/ui": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
+    "baseline-browser-mapping": "^2.9.19",
+    "happy-dom": "^20.6.3",
+    "vitest": "^4.0.18"
   }
 }

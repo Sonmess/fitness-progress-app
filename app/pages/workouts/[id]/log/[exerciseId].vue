@@ -105,6 +105,9 @@
       </form>
     </div>
   </CommonBasePage>
+  <div v-else>
+    No exercise with ID: {{ exerciseId }} found !
+  </div>
 </template>
 
 <script setup lang="ts">

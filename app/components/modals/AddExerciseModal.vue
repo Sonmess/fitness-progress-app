@@ -102,7 +102,7 @@
                     >
                       <option value="">None</option>
                       <option
-                        v-for="item in getEquipmentptions"
+                        v-for="item in getEquipmentOptions"
                         :key="item"
                         :value="item"
                       >
@@ -169,7 +169,7 @@ const emit = defineEmits<{
 // Get the list of body parts from our composable
 const { bodyParts, fetchBodyParts } = useBodyParts();
 // Define the equipment options based on our type
-const { getEquipmentptions } = useEquipment();
+const { getEquipmentOptions } = useEquipment();
 
 // Form state
 const form = ref<Partial<NewExerciseData>>({});

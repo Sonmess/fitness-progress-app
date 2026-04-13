@@ -95,7 +95,7 @@
                     >
                       <option value="">None</option>
                       <option
-                        v-for="item in getEquipmentptions"
+                        v-for="item in getEquipmentOptions"
                         :key="item"
                         :value="item"
                       >
@@ -159,7 +159,7 @@ const emit = defineEmits<{
 }>();
 
 const { bodyParts, fetchBodyParts } = useBodyParts();
-const { getEquipmentptions } = useEquipment();
+const { getEquipmentOptions } = useEquipment();
 
 const form = ref<Partial<Exercise>>({});
 const selectedBodyPartId = ref("");

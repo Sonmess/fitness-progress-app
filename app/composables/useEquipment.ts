@@ -19,6 +19,6 @@ export const useEquipment = () => {
   });
 
   return {
-    getEquipmentptions: getOptions,
+    getEquipmentOptions: getOptions,
   };
 };

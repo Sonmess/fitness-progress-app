@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Security
+
+## [0.2.0] - 2026-04-13
+
+### Added
 - Initial project setup with Nuxt 4, Vue 3, and Firebase
 - User authentication with Firebase Auth
 - Exercise management system
@@ -17,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Common BasePage component for consistent layouts
 - Page transitions for improved UX
 - Responsive design with Tailwind CSS
+- **Global Notifications** - Added global error and success notification system across the application
+- **Workout Pagination** - Implemented pagination for workout sessions to improve performance with large histories
+- **Composite Firestore Indexes** - Added composite indexes for optimized `workoutSessions` and `workoutLogs` queries
 - **Exercise Progress Page** - New dedicated page at `/progress/[exerciseId]` showing detailed workout history
 - **Progress Table Component** - Displays all workout logs in expandable table format with:
   - Dynamic columns based on maximum sets performed
@@ -43,6 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved table structure on progress page
 - Enhanced contact page with new icons and BasePage
 - Refactored project structure for better organization
+- **Refactored PR Calculations** - Optimized personal record calculations and UI for body part-specific records
+- **Refactored NumberInput** - Replaced `displayValue` with `rawInput` for more consistent input handling across forms
+- **Enhanced Composables** - Cleaned up imports and refined logic in `useProgress` and `useEquipment`
+- **Improved UI/UX** - Enhanced layout and reusable components for the workout log page
 - Weight input fields now accept negative values to support assisted exercises (e.g., -10kg for 10kg assistance)
 - Weight inputs now support any decimal increment (e.g., 0.25kg, 0.5kg, 2.5kg) for precise tracking
 - Updated placeholder text to indicate negative weights represent assistance
@@ -54,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Recent Log now correctly excludes current session when logging/editing workouts
 - Recent Log displays previous workout session as reference point instead of current changes
+- **Enhanced Error Handling** - Improved error handling for missing exercise logs and navigation on progress pages
 - **SECURITY:** Fixed critical data leakage bug where user data persisted after logout, allowing next logged-in user to see previous user's workout data, logs, and personal records
 - Fixed invalid exerciseId handling in progress pages with proper async/await and redirects
 
@@ -88,3 +106,7 @@ When releasing a new version:
 1. Create a new version section (e.g., `## [0.2.0] - 2026-02-15`)
 2. Move relevant entries from `[Unreleased]` to the new version
 3. Add a link to the release at the bottom of the file
+
+[Unreleased]: https://github.com/bohac/fitness-progress-app/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/bohac/fitness-progress-app/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/bohac/fitness-progress-app/releases/tag/v0.1.0

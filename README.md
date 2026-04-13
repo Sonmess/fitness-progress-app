@@ -13,10 +13,12 @@ A comprehensive fitness tracking application built with Nuxt 4, Vue 3, and Fireb
   - Visual highlighting of best performances
 - 💪 **Workout Logging** - Log workout sessions and track your performance with:
   - Set-by-set tracking (reps and weight)
+  - Pagination for workout history
   - Support for assisted exercises (negative weights)
   - Decimal weight increments (0.25kg, 0.5kg, etc.)
   - Recent workout reference for consistency
 - 🔐 **User Authentication** - Secure authentication powered by Firebase Auth
+- 🔔 **Global Notifications** - Real-time success and error feedback for user actions
 - 📱 **Responsive Design** - Beautiful UI built with Tailwind CSS with:
   - Dark theme optimized for gym lighting
   - Mobile-first approach with horizontal scrolling for large datasets

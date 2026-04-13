@@ -146,7 +146,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import type { Exercise } from "~/types";
-import type { NewExerciseData } from "~/types/index";
+import type { NewExerciseData } from "~/types";
 
 const props = defineProps<{
   isOpen: boolean;

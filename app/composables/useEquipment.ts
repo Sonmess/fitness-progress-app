@@ -1,5 +1,3 @@
-import { ref } from "vue";
-
 /**
  * A composable to provide a globally accessible, consistent list of equipment options.
  */
@@ -15,7 +13,7 @@ export const useEquipment = () => {
   ]);
 
   const getOptions = computed(() => {
-    return equipmentOptions.value.sort((a, b) => a.localeCompare(b));
+    return [...equipmentOptions.value].sort((a, b) => a.localeCompare(b));
   });
 
   return {

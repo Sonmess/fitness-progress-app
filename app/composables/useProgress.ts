@@ -1,12 +1,11 @@
-import { ref } from "vue";
 import {
   collection,
   getDocs,
   getFirestore,
-  query,
+  query, type Timestamp,
   where,
 } from "firebase/firestore";
-import { type WorkoutLog, type Exercise, type Set } from "~/types";
+import { type WorkoutLog, type Set } from "~/types";
 
 // Define a new type for our enriched personal record object
 export interface PersonalRecord {
@@ -72,8 +71,9 @@ export const useProgress = () => {
       // We use a Map for efficient lookups.
       const maxRecords = new Map<string, { weight: number; reps: number; date: Date }>();
       querySnapshot.forEach((doc) => {
-        const log = doc.data() as WorkoutLog;
-        const logDate = log.date?.toDate ? log.date.toDate() : new Date(log.date);
+        const data = doc.data();
+        const logDate = (data.date as Timestamp).toDate();
+        const log = { ...data, date: logDate } as WorkoutLog;
 
         log.sets.forEach((set) => {
           const currentRecord = maxRecords.get(log.exerciseId);

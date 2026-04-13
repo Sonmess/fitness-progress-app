@@ -2,7 +2,8 @@ import {
   collection,
   getDocs,
   getFirestore,
-  query, type Timestamp,
+  query,
+  type Timestamp,
   where,
 } from "firebase/firestore";
 import { type WorkoutLog, type Set } from "~/types";
@@ -21,84 +22,105 @@ const WORKOUT_LOGS_COLLECTION = "workoutLogs";
 
 export const useProgress = () => {
   // --- State ---
-  // Use useState for global state caching across the app
-  const personalRecords = useState<PersonalRecord[]>('personalRecords', () => []);
-  const isLoading = useState<boolean>('personalRecordsLoading', () => false);
+  // Cache keyed by bodyPartId — only loaded when the user expands that body part
+  const recordsByBodyPart = useState<Record<string, PersonalRecord[]>>('recordsByBodyPart', () => ({}));
+  const loadingBodyParts = useState<string[]>('loadingBodyParts', () => []);
   const personalRecordSet = useState<Set | null>('personalRecordSet', () => null);
   const isPrSetLoading = useState<boolean>('prSetLoading', () => false);
-  const lastCalculatedUserId = useState<string | null>('lastCalculatedUserId', () => null);
 
   // --- Dependencies ---
   const { userId } = useAuth();
-  // We need the master list of exercises to get their names and body parts
   const { exercises, fetchExercises } = useExercises();
   const db = getFirestore();
   const logsCollection = collection(db, WORKOUT_LOGS_COLLECTION);
 
+  // --- Helpers ---
+
+  /**
+   * Returns true if records for the given body part are currently being fetched.
+   */
+  const isBodyPartLoading = (bodyPartId: string) =>
+    loadingBodyParts.value.includes(bodyPartId);
+
   // --- Actions ---
 
   /**
-   * Calculates the all-time maximum weight for every exercise the user has logged.
-   * The final list is sorted by body part, then by exercise name.
+   * Fetches and calculates PRs for a single body part on demand.
+   * Results are cached per bodyPartId — subsequent calls for the same ID are instant.
+   * @param bodyPartId The body part to calculate records for.
    * @param force If true, forces a refresh even if data is already cached.
    */
-  const calculateAllPersonalRecords = async (force = false) => {
-    if (!userId.value) {
-      personalRecords.value = [];
-      return;
-    }
+  const calculateRecordsForBodyPart = async (bodyPartId: string, force = false) => {
+    if (!userId.value) return;
 
-    // Skip calculation if already done for this user and not forcing refresh
-    if (lastCalculatedUserId.value === userId.value && personalRecords.value.length > 0 && !force) {
-      return;
-    }
+    // Return from cache if available and not forcing refresh
+    if (recordsByBodyPart.value[bodyPartId] && !force) return;
 
-    isLoading.value = true;
-    personalRecords.value = [];
+    // Mark as loading
+    loadingBodyParts.value = [...loadingBodyParts.value, bodyPartId];
 
     try {
-      // Step 1: Ensure we have the master list of all exercises.
-      // This list is already sorted by bodyPartName and name.
+      // Step 1: Ensure exercises are loaded (uses cache if already fetched)
       if (exercises.value.length === 0) {
         await fetchExercises();
       }
 
-      // Step 2: Fetch all workout logs for the current user in a single query.
-      const q = query(logsCollection, where("userId", "==", userId.value));
-      const querySnapshot = await getDocs(q);
+      // Step 2: Get only the exercises belonging to this body part
+      const bodyPartExercises = exercises.value.filter(
+        (ex) => ex.bodyPartId === bodyPartId
+      );
 
-      // Step 3: Process the logs to find the max weight, reps, and date for each exercise.
-      // We use a Map for efficient lookups.
+      if (bodyPartExercises.length === 0) {
+        recordsByBodyPart.value = { ...recordsByBodyPart.value, [bodyPartId]: [] };
+        return;
+      }
+
+      const exerciseIds = bodyPartExercises.map((ex) => ex.id);
+
+      // Step 3: Query logs for these exercises.
+      // Firestore 'in' supports max 30 values, so we chunk and run queries in parallel.
+      const CHUNK_SIZE = 30;
+      const chunks: string[][] = [];
+      for (let i = 0; i < exerciseIds.length; i += CHUNK_SIZE) {
+        chunks.push(exerciseIds.slice(i, i + CHUNK_SIZE));
+      }
+
+      const snapshots = await Promise.all(
+        chunks.map((chunk) =>
+          getDocs(
+            query(
+              logsCollection,
+              where("userId", "==", userId.value),
+              where("exerciseId", "in", chunk)
+            )
+          )
+        )
+      );
+
+      // Step 4: Calculate the PR for each exercise across all query results
       const maxRecords = new Map<string, { weight: number; reps: number; date: Date }>();
-      querySnapshot.forEach((doc) => {
+      snapshots.forEach((querySnapshot) => querySnapshot.forEach((doc) => {
         const data = doc.data();
         const logDate = (data.date as Timestamp).toDate();
         const log = { ...data, date: logDate } as WorkoutLog;
 
         log.sets.forEach((set) => {
-          const currentRecord = maxRecords.get(log.exerciseId);
-
-          // Update if: no record exists, higher weight, or same weight but more reps, or same weight/reps but more recent
-          if (!currentRecord ||
-              set.weight > currentRecord.weight ||
-              (set.weight === currentRecord.weight && set.reps > currentRecord.reps) ||
-              (set.weight === currentRecord.weight && set.reps === currentRecord.reps && logDate > currentRecord.date)) {
-            maxRecords.set(log.exerciseId, {
-              weight: set.weight,
-              reps: set.reps,
-              date: logDate
-            });
+          const current = maxRecords.get(log.exerciseId);
+          if (
+            !current ||
+            set.weight > current.weight ||
+            (set.weight === current.weight && set.reps > current.reps) ||
+            (set.weight === current.weight && set.reps === current.reps && logDate > current.date)
+          ) {
+            maxRecords.set(log.exerciseId, { weight: set.weight, reps: set.reps, date: logDate });
           }
         });
-      });
+      }));
 
-      // Step 4: Create the final, sorted list of records.
+      // Step 5: Build the final list in exercise order (bodyPartExercises is already sorted)
       const records: PersonalRecord[] = [];
-      // We iterate through our pre-sorted `exercises` array to build the final list.
-      // This ensures the final output is also sorted correctly.
-      exercises.value.forEach((exercise) => {
+      bodyPartExercises.forEach((exercise) => {
         const record = maxRecords.get(exercise.id);
-        // Only include exercises for which a record was found.
         if (record && record.weight > 0) {
           records.push({
             exerciseId: exercise.id,
@@ -111,13 +133,11 @@ export const useProgress = () => {
         }
       });
 
-      personalRecords.value = records;
-      lastCalculatedUserId.value = userId.value;
+      recordsByBodyPart.value = { ...recordsByBodyPart.value, [bodyPartId]: records };
     } catch (error) {
-      console.error("Error calculating personal records: ", error);
-      personalRecords.value = [];
+      console.error("Error calculating records for body part:", error);
     } finally {
-      isLoading.value = false;
+      loadingBodyParts.value = loadingBodyParts.value.filter((id) => id !== bodyPartId);
     }
   };
 
@@ -136,8 +156,8 @@ export const useProgress = () => {
         where("userId", "==", userId.value),
         where("exerciseId", "==", exerciseId)
       );
-      const querySnapshop = await getDocs(q);
-      querySnapshop.forEach((doc) => {
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((doc) => {
         const log = doc.data() as WorkoutLog;
         log.sets.forEach((set) => {
           if (set.weight > bestSet.weight) {
@@ -150,7 +170,7 @@ export const useProgress = () => {
 
       personalRecordSet.value = bestSet;
     } catch (error) {
-      console.error("Error finding personal record set: ", error);
+      console.error("Error finding personal record set:", error);
     } finally {
       isPrSetLoading.value = false;
     }
@@ -160,20 +180,19 @@ export const useProgress = () => {
    * Clears all progress state. Called during logout to prevent data leakage between users.
    */
   const clearProgressState = () => {
-    personalRecords.value = [];
+    recordsByBodyPart.value = {};
+    loadingBodyParts.value = [];
     personalRecordSet.value = null;
-    isLoading.value = false;
     isPrSetLoading.value = false;
-    lastCalculatedUserId.value = null;
   };
 
   // --- Public API ---
   return {
-    personalRecords,
-    isLoading,
+    recordsByBodyPart,
+    isBodyPartLoading,
     isPrSetLoading,
     personalRecordSet,
-    calculateAllPersonalRecords,
+    calculateRecordsForBodyPart,
     findPersonalRecordSet,
     clearProgressState,
   };

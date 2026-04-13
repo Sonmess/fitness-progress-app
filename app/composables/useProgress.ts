@@ -30,6 +30,7 @@ export const useProgress = () => {
 
   // --- Dependencies ---
   const { userId } = useAuth();
+  const { notify } = useNotification();
   const { exercises, fetchExercises } = useExercises();
   const db = getFirestore();
   const logsCollection = collection(db, WORKOUT_LOGS_COLLECTION);
@@ -134,8 +135,10 @@ export const useProgress = () => {
       });
 
       recordsByBodyPart.value = { ...recordsByBodyPart.value, [bodyPartId]: records };
+      notify('Personal records updated', 'success');
     } catch (error) {
       console.error("Error calculating records for body part:", error);
+      notify('Failed to load personal records. Please try again.', 'error');
     } finally {
       loadingBodyParts.value = loadingBodyParts.value.filter((id) => id !== bodyPartId);
     }
@@ -171,6 +174,7 @@ export const useProgress = () => {
       personalRecordSet.value = bestSet;
     } catch (error) {
       console.error("Error finding personal record set:", error);
+      notify('Failed to load personal record. Please try again.', 'error');
     } finally {
       isPrSetLoading.value = false;
     }

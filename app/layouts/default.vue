@@ -8,6 +8,7 @@
     </main>
 
     <CommonBaseFooter />
+    <AppToast />
   </div>
 </template>
 

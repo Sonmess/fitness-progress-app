@@ -25,7 +25,8 @@ export const useWorkoutLogs = () => {
   const currentSessionId = useState<string | null>('currentLogsSessionId', () => null);
   const exerciseLogs = useState<Record<string, WorkoutLog[]>>('exerciseWorkoutLogs', () => ({}));
 
-  const { userId } = useAuth();
+  const {userId} = useAuth();
+  const {notify} = useNotification();
   const db = getFirestore();
   const logsCollection = collection(db, 'workoutLogs');
 
@@ -47,10 +48,10 @@ export const useWorkoutLogs = () => {
     try {
       isLoading.value = true;
       const q = query(
-        logsCollection,
-        where('userId', '==', userId.value),
-        where('sessionId', '==', sessionId),
-        orderBy('date', 'desc')
+          logsCollection,
+          where('userId', '==', userId.value),
+          where('sessionId', '==', sessionId),
+          orderBy('date', 'desc')
       );
       const querySnapshot = await getDocs(q);
       logs.value = querySnapshot.docs.map((doc) => {
@@ -64,6 +65,7 @@ export const useWorkoutLogs = () => {
       currentSessionId.value = sessionId;
     } catch (error) {
       console.error('Error fetching workout logs: ', error);
+      notify('Failed to load workout logs. Please try again.', 'error');
     } finally {
       isLoading.value = false;
     }
@@ -114,11 +116,11 @@ export const useWorkoutLogs = () => {
       isLoading.value = true;
       // Fetch 2 logs to handle exclusion case where we might need the second one
       const q = query(
-        logsCollection,
-        where('userId', '==', userId.value),
-        where('exerciseId', '==', exerciseId),
-        orderBy('date', 'desc'),
-        limit(2)
+          logsCollection,
+          where('userId', '==', userId.value),
+          where('exerciseId', '==', exerciseId),
+          orderBy('date', 'desc'),
+          limit(2)
       );
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
@@ -136,6 +138,7 @@ export const useWorkoutLogs = () => {
       }
     } catch (error) {
       console.error('Error fetching recent log: ', error);
+      notify('Failed to load recent log. Please try again.', 'error');
     } finally {
       isLoading.value = false;
     }
@@ -146,7 +149,7 @@ export const useWorkoutLogs = () => {
    * @param exerciseId The exercise ID to fetch logs for
    * @param force If true, forces a refresh even if data is already cached
    */
-  const fetchLogsForExercise = async (exerciseId: string, force = false): Promise<WorkoutLog[]>=> {
+  const fetchLogsForExercise = async (exerciseId: string, force = false): Promise<WorkoutLog[]> => {
     if (!userId.value) return [];
 
     // Check if we have cached data for this exercise
@@ -178,6 +181,7 @@ export const useWorkoutLogs = () => {
       return fetchedLogs;
     } catch (error) {
       console.error('Error fetching workout logs for exercise: ', error);
+      notify('Failed to load exercise history. Please try again.', 'error');
       return [];
     } finally {
       isLoading.value = false;
@@ -203,11 +207,12 @@ export const useWorkoutLogs = () => {
         date: new Date(),
       };
       const docRef = await addDoc(logsCollection, logWithUserAndDate);
-      const newLog: WorkoutLog = { id: docRef.id, ...logWithUserAndDate };
+      const newLog: WorkoutLog = {id: docRef.id, ...logWithUserAndDate};
       logs.value.unshift(newLog);
       return newLog;
     } catch (error) {
       console.error('Error adding workout log: ', error);
+      notify('Failed to save workout log. Please try again.', 'error');
       throw error; // Re-throw to let caller handle it
     } finally {
       isLoading.value = false;
@@ -218,13 +223,14 @@ export const useWorkoutLogs = () => {
     try {
       isLoading.value = true;
       const docRef = doc(db, 'workoutLogs', logId);
-      await updateDoc(docRef, { sets: updatedSets });
+      await updateDoc(docRef, {sets: updatedSets});
       const index = logs.value.findIndex((log) => log.id === logId);
       if (index !== -1 && logs.value[index]) {
         logs.value[index].sets = updatedSets;
       }
     } catch (error) {
       console.error('Error updating workout log:', error);
+      notify('Failed to update workout log. Please try again.', 'error');
     } finally {
       isLoading.value = false;
     }
@@ -238,6 +244,7 @@ export const useWorkoutLogs = () => {
       logs.value = logs.value.filter((log) => log.id !== logId);
     } catch (error) {
       console.error('Error deleting workout log:', error);
+      notify('Failed to delete workout log. Please try again.', 'error');
     } finally {
       isLoading.value = false;
     }

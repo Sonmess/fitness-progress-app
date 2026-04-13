@@ -17,6 +17,7 @@ const EXERCISE_COLLECTION = "exercises";
 
 export const useExercises = () => {
   const { $firestore } = useNuxtApp();
+  const { notify } = useNotification();
 
   // Use useState for global state caching across the app
   const exercises = useState<Exercise[]>('exercises', () => []);
@@ -56,6 +57,7 @@ export const useExercises = () => {
       );
     } catch (error) {
       console.error("Error fetching exercises:", error);
+      notify('Failed to load exercises. Please try again.', 'error');
     } finally {
       isLoading.value = false;
     }
@@ -124,6 +126,7 @@ export const useExercises = () => {
       }
     } catch (error) {
       console.error("Error updating exercise", error);
+      notify('Failed to update exercise. Please try again.', 'error');
     }
   };
 
@@ -138,6 +141,7 @@ export const useExercises = () => {
       exercises.value = exercises.value.filter((ex) => ex.id !== exerciseId);
     } catch (error) {
       console.error("Error deleting exercise", error);
+      notify('Failed to delete exercise. Please try again.', 'error');
     }
   };
 
@@ -158,6 +162,7 @@ export const useExercises = () => {
       });
     } catch (error) {
       console.error("Error adding exercise: ", error);
+      notify('Failed to add exercise. Please try again.', 'error');
     }
   };
 

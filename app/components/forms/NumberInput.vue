@@ -19,7 +19,7 @@
     </button>
 
     <input
-        :value="displayValue"
+        :value="rawInput"
         @input="handleInput"
         type="number"
         step="any"
@@ -49,25 +49,26 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
 }>();
 
-// Display only the absolute value
-const displayValue = computed(() => {
-  return Math.abs(props.modelValue);
-});
+const rawInput = ref(String(Math.abs(props.modelValue) || ''));
 
-// Initialize isNegative based on modelValue when component mounts or value changes
 watch(() => props.modelValue, (newValue) => {
+  const abs = Math.abs(newValue);
+  if (Number(rawInput.value) !== abs) {
+    rawInput.value = String(abs || '');
+  }
   isNegative.value = newValue < 0;
 }, { immediate: true });
 
-// Watch for sign changes and emit the updated value
 watch(isNegative, () => {
-  const currentValue = Math.abs(props.modelValue);
+  const currentValue = Math.abs(Number(rawInput.value) || props.modelValue);
   const newValue = isNegative.value ? -currentValue : currentValue;
   emit('update:modelValue', String(newValue));
 });
 
 const handleInput = (event: Event) => {
   const inputValue = (event.currentTarget as HTMLInputElement).value;
+  rawInput.value = inputValue;
+  if (inputValue === '' || /\.$/.test(inputValue)) return;
   const absoluteValue = Math.abs(Number(inputValue));
   const signedValue = isNegative.value ? -absoluteValue : absoluteValue;
   emit('update:modelValue', String(signedValue));

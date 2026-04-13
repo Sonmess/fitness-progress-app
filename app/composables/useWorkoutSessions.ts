@@ -1,24 +1,26 @@
 import {
-  collection,
-  addDoc,
-  getDocs,
-  getDoc,
-  getFirestore,
-  query,
-  where,
-  orderBy,
-  doc,
-  Timestamp,
-  updateDoc,
-  writeBatch,
+    collection,
+    addDoc,
+    getDocs,
+    getDoc,
+    getFirestore,
+    query,
+    where,
+    orderBy,
+    doc,
+    Timestamp,
+    writeBatch,
+    QueryDocumentSnapshot,
+    limit,
+    startAfter
 } from "firebase/firestore";
 import type {
   WorkoutSession,
   NewWorkoutSessionData,
-  BodyPart,
   CreateSessionInput,
 } from "~/types";
 
+const PAGE_SIZE = 5;
 const DB_NAME_WORKOUTS = "workoutSessions";
 const DB_NAME_WORKOUT_LOGS = "workoutLogs";
 
@@ -28,6 +30,8 @@ export const useWorkoutSessions = () => {
   const sessions = useState<WorkoutSession[]>('workoutSessions', () => []);
   const session = useState<WorkoutSession | null>('currentWorkoutSession', () => null);
   const isLoading = useState<boolean>('workoutSessionsLoading', () => false);
+  const lastVisible = useState<QueryDocumentSnapshot | null>('lastVisibleSession', () => null)
+  const hasMore = useState<boolean>('sessionsHasMore', () => true)
 
   // --- Dependencies ---
   const { userId } = useAuth(); // Get the current user's ID
@@ -55,16 +59,19 @@ export const useWorkoutSessions = () => {
 
     try {
       isLoading.value = true;
-      // Create a query to get documents where 'userId' matches the current user,
+      // Create a query to get documents where 'userId' matches the current user
       // and order them by date with the newest first.
       const q = query(
         sessionsCollection,
         where("userId", "==", userId.value),
-        orderBy("date", "desc")
+        orderBy("date", "desc"),
+        limit(PAGE_SIZE)
       );
 
       const querySnapshot = await getDocs(q);
       const fetchedSessions: WorkoutSession[] = [];
+      lastVisible.value = querySnapshot.docs[querySnapshot.docs.length - 1] ?? null;
+      hasMore.value = querySnapshot.docs.length === PAGE_SIZE;
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -82,6 +89,34 @@ export const useWorkoutSessions = () => {
       isLoading.value = false;
     }
   };
+
+    const fetchMoreSessions = async () => {
+        if (!lastVisible.value || !hasMore.value || !userId.value) return;
+
+        try {
+            isLoading.value = true;
+            const q = query(
+                sessionsCollection,
+                where("userId", "==", userId.value),
+                orderBy("date", "desc"),
+                startAfter(lastVisible.value),   // 👈 cursor from previous page
+                limit(PAGE_SIZE)
+            );
+            const snapshot = await getDocs(q);
+            const moreSessions: WorkoutSession[] = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as WorkoutSession;
+            });
+
+            sessions.value.push(...moreSessions);   // append, don't replace
+            lastVisible.value = snapshot.docs[snapshot.docs.length - 1] ?? null;
+            hasMore.value = snapshot.docs.length === PAGE_SIZE;
+        } catch (error) {
+            console.error("Error fetching more sessions: ", error);
+        } finally {
+            isLoading.value = false;
+        }
+    };
 
   /**
    * Fetches a single workout session by its ID. Checks cache first, then fetches from Firestore if needed.
@@ -246,7 +281,7 @@ export const useWorkoutSessions = () => {
       );
       const logsSnapshot = await getDocs(logsQuery);
 
-      // Step 2: Use a batch write to delete the session and all logs atomically
+      // Step 2: Use a batch to delete the session and all logs atomically
       const batch = writeBatch(db);
       logsSnapshot.forEach((logDoc) => {
         batch.delete(logDoc.ref);
@@ -277,8 +312,10 @@ export const useWorkoutSessions = () => {
     session,
     sessions,
     isLoading,
+    hasMore,
     fetchWorkoutSessions,
     fetchSessionById,
+    fetchMoreSessions,
     addWorkoutSession,
     updateWorkoutSession,
     deleteWorkoutSession,

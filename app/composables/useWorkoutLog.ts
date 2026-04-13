@@ -160,7 +160,8 @@ export const useWorkoutLogs = () => {
           logsCollection,
           where('userId', '==', userId.value),
           where('exerciseId', '==', exerciseId),
-          orderBy('date', 'desc')
+          orderBy('date', 'desc'),
+          limit(100)
       );
       const querySnapshot = await getDocs(q);
       const fetchedLogs = querySnapshot.docs.map((doc) => {

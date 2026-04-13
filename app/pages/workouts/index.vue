@@ -79,6 +79,15 @@
                 No workout sessions found. Start one to get going!
               </p>
             </div>
+
+            <button
+                v-if="hasMore"
+                @click="fetchMoreSessions"
+                :disabled="isLoading"
+                class="mt-6 w-full rounded-md bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+              {{ isLoading ? 'Loading...' : 'Load more' }}
+            </button>
           </div>
         </div>
       </div>
@@ -106,7 +115,10 @@ import type { WorkoutSession, CreateSessionInput } from "~/types";
 
 const {
   sessions,
+  hasMore,
+  isLoading,
   fetchWorkoutSessions,
+  fetchMoreSessions,
   addWorkoutSession,
   updateWorkoutSession,
   deleteWorkoutSession,

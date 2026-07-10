@@ -8,10 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- MIT License — the project is now open source
+- `docs/DATA_MODEL.md` — Firestore data model documentation with entity-relationship diagram (Mermaid)
+- Mermaid diagrams in `docs/ARCHITECTURE.md` — data-flow, exercise-progress loading, and authentication sequence diagrams (replacing ASCII art)
 
 ### Changed
+- Slimmed CONTRIBUTING.md into concise development guidelines (workflow, code style, changelog and Firebase rules)
+- README now links to docs/ARCHITECTURE.md for project structure instead of duplicating it, documents the actual Firestore collections (`workoutLogs`, `bodyParts`), and adds a Testing section
 
 ### Fixed
+- Changelog comparison links pointed to a wrong GitHub account
 
 ### Security
 
@@ -91,22 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## How to Update This Changelog
-
-When making changes, add entries under the `[Unreleased]` section using these categories:
-
-- **Added** for new features
-- **Changed** for changes in existing functionality
-- **Deprecated** for soon-to-be removed features
-- **Removed** for now removed features
-- **Fixed** for any bug fixes
-- **Security** for vulnerability fixes
-
-When releasing a new version:
-1. Create a new version section (e.g., `## [0.2.0] - 2026-02-15`)
-2. Move relevant entries from `[Unreleased]` to the new version
-3. Add a link to the release at the bottom of the file
-
-[Unreleased]: https://github.com/bohac/fitness-progress-app/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/bohac/fitness-progress-app/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/bohac/fitness-progress-app/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Sonmess/fitness-progress-app/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Sonmess/fitness-progress-app/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Sonmess/fitness-progress-app/releases/tag/v0.1.0

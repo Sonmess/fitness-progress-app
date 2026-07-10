@@ -1,117 +1,42 @@
-# Contributing to Fitness Progress App
+# Development Guidelines
 
-Thank you for considering contributing to the Fitness Progress App! This document provides guidelines and instructions for contributing.
+This is a personal project, open source under the [MIT License](LICENSE). Issues and pull requests are welcome, but the primary purpose of this document is to keep development consistent.
 
-## Code of Conduct
+## Workflow
 
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Help create a welcoming environment for all contributors
-
-## How to Contribute
-
-### Reporting Bugs
-
-1. Check if the bug has already been reported in [Issues](../../issues)
-2. If not, create a new issue with:
-   - Clear, descriptive title
-   - Steps to reproduce the bug
-   - Expected vs actual behavior
-   - Screenshots (if applicable)
-   - Your environment (OS, browser, Node version)
-
-### Suggesting Features
-
-1. Check existing issues for similar suggestions
-2. Create a new issue with:
-   - Clear description of the feature
-   - Use cases and benefits
-   - Potential implementation approach (optional)
-
-### Pull Requests
-
-1. **Fork the repository** and create your branch from `main`
-2. **Branch naming**: Use descriptive names
+1. Branch from `main` with a descriptive name:
    - `feature/add-exercise-filters`
    - `fix/workout-log-bug`
    - `docs/update-setup-guide`
+2. Use [Conventional Commits](https://www.conventionalcommits.org/) messages:
+   - `feat: add workout filter by date`
+   - `fix: resolve authentication redirect issue`
+   - `docs: update Firebase setup instructions`
+   - `refactor: simplify exercise composable`
+   - `chore: update dependencies`
+3. Before committing:
+   - `npm test` — all tests pass
+   - `npm run build` — build succeeds
+   - Update `CHANGELOG.md` for any user-facing change (see below)
+   - Update `README.md` (features) and `docs/ARCHITECTURE.md` (structure) if they are affected
 
-3. **Make your changes**
-   - Write clean, readable code
-   - Follow existing code style and patterns
-   - Add comments for complex logic
-   - Update documentation if needed
+## Code Style
 
-4. **Test your changes**
-   - Ensure the app builds without errors
-   - Test all affected functionality
-   - Check responsive design on different screen sizes
+- TypeScript for all code; avoid `any`, define shared types in `app/types/index.ts`
+- Vue 3 Composition API with `<script setup>`; shared logic belongs in composables
+- Naming: components PascalCase (`ExerciseCard.vue`), composables `use` prefix (`useExercises.ts`), constants UPPER_SNAKE_CASE, variables/functions camelCase
+- Reuse existing UI primitives (`app/components/ui/`, `BasePage`, `BaseTabs`) before writing new markup
+- Use `useNotification` for user feedback, never `alert()`
 
-5. **Commit your changes**
-   - Use clear, descriptive commit messages
-   - Follow conventional commits format:
-     - `feat: add workout filter by date`
-     - `fix: resolve authentication redirect issue`
-     - `docs: update Firebase setup instructions`
-     - `refactor: simplify exercise composable`
-     - `style: format code with prettier`
+## Changelog
 
-6. **Submit pull request**
-   - Provide clear description of changes
-   - Reference related issues
-   - Include screenshots for UI changes
-   - Ensure all checks pass
+The changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Development Setup
+- Add entries under `[Unreleased]` in the matching category: **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Security**
+- When releasing: create a version section (e.g. `## [0.3.0] - 2026-08-01`), move the `[Unreleased]` entries into it, and add a comparison link at the bottom of the file
 
-See [README.md](README.md#setup) for detailed setup instructions.
+## Firebase
 
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-## Code Style Guidelines
-
-### TypeScript
-
-- Use TypeScript for all new code
-- Define proper types, avoid `any` when possible
-- Use interfaces for object shapes
-
-### Vue Components
-
-- Use Composition API with `<script setup>`
-- Keep components focused and single-purpose
-- Use composables for shared logic
-- Follow Vue 3 best practices
-
-### File Organization
-
-- Place components in appropriate subdirectories
-- Keep related files together
-- Use index files for clean imports
-
-### Naming Conventions
-
-- Components: PascalCase (e.g., `ExerciseCard.vue`)
-- Composables: camelCase with `use` prefix (e.g., `useExercises.ts`)
-- Constants: UPPER_SNAKE_CASE
-- Variables/functions: camelCase
-
-## Firebase Guidelines
-
-- Never commit Firebase credentials
-- Use environment variables for configuration
-- Follow Firestore security best practices
-- Minimize database reads/writes
-
-## Questions?
-
-Feel free to open an issue for any questions about contributing!
+- Never commit credentials; configuration comes from `.env` (see `.env.example`)
+- Scope all user-data queries by `userId`
+- Minimize database reads/writes; add composite indexes to `firestore.indexes.json` when queries need them

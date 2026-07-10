@@ -33,44 +33,13 @@ A comprehensive fitness tracking application built with Nuxt 4, Vue 3, and Fireb
 - **Backend:** [Firebase](https://firebase.google.com/) (Authentication & Firestore)
 - **Language:** TypeScript
 - **Charts:** [Chart.js](https://www.chartjs.org/) with [vue-chartjs](https://vue-chartjs.org/)
+- **Testing:** [Vitest](https://vitest.dev/) with Vue Test Utils
 
 ## Project Structure
 
-```
-app/
-├── components/       # Vue components
-│   ├── common/      # Shared components (BasePage, etc.)
-│   ├── exercises/   # Exercise-related components
-│   ├── icons/       # Icon components
-│   ├── modals/      # Modal dialogs
-│   ├── progress/    # Progress tracking components
-│   │   ├── LineGraph.vue        # Reusable Chart.js wrapper
-│   │   ├── ProgressGraph.vue    # Progress graphs container
-│   │   └── ProgressTable.vue    # Workout history table
-│   └── ui/          # UI components
-│       └── navigation/
-│           ├── BackLink.vue     # Back navigation component
-│           └── BaseTabs.vue     # Tab navigation component
-├── composables/     # Vue composables for state management
-│   ├── useAuth.ts
-│   ├── useExercises.ts
-│   ├── useProgress.ts
-│   └── useWorkoutLog.ts
-├── constants/       # Application constants
-│   └── routes.ts    # Route definitions and builders
-├── pages/           # Route pages (file-based routing)
-│   ├── exercises/
-│   ├── progress/
-│   │   ├── [exerciseId].vue  # Exercise-specific progress
-│   │   └── index.vue          # Progress overview
-│   └── workouts/
-├── plugins/         # Nuxt plugins (Firebase init)
-├── types/           # TypeScript type definitions
-│   └── index.ts
-└── utils/           # Utility functions
-    ├── date.ts      # Date formatting helpers
-    └── workout.ts   # Workout calculation helpers
-```
+The app follows standard Nuxt 4 conventions: file-based routing in `app/pages/`, components organized by feature domain in `app/components/`, state management via composables in `app/composables/`, and pure utility functions in `app/utils/`.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full project structure, data flow, and design decisions.
 
 ## Prerequisites
 
@@ -82,7 +51,7 @@ app/
 1. **Clone the repository**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Sonmess/fitness-progress-app.git
 cd fitness-progress-app
 ```
 
@@ -100,7 +69,7 @@ bun install
 
 3. **Configure Firebase**
 
-Create a `.env` file in the root directory with your Firebase configuration:
+Copy `.env.example` to `.env` and fill in your Firebase configuration:
 
 ```env
 FIREBASE_API_KEY=your_api_key
@@ -115,11 +84,14 @@ You can find these values in your Firebase project settings (Project Settings > 
 
 4. **Set up Firestore collections**
 
-Your Firebase Firestore should have the following collections:
+The app uses the following Firestore collections:
 - `users` - User profiles
-- `exercises` - Exercise definitions
-- `workoutSessions` - Workout session logs
-- `progress` - Progress tracking data
+- `exercises` - Exercise definitions (shared across users)
+- `workoutSessions` - Workout sessions
+- `workoutLogs` - Per-exercise logs belonging to a session
+- `bodyParts` - Body part reference data
+
+Composite indexes are defined in [firestore.indexes.json](firestore.indexes.json).
 
 ## Development
 
@@ -134,6 +106,18 @@ yarn dev
 # or
 bun run dev
 ```
+
+## Testing
+
+Run unit tests with Vitest:
+
+```bash
+npm test              # run all tests
+npm run test:ui       # interactive test UI
+npm run test:coverage # coverage report
+```
+
+Tests live next to their sources (e.g. `app/utils/date.test.ts`).
 
 ## Production
 
@@ -153,11 +137,11 @@ Check out the [Nuxt deployment documentation](https://nuxt.com/docs/getting-star
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## License
 
-No license. Project is protected by default copyright. No one can legally use, copy, or distribute it without your permission, even if the repository is public on GitHub.
+This project is open source under the [MIT License](LICENSE).
 
 ## Support
 

@@ -62,7 +62,7 @@ app/
 │   ├── index.vue
 │   └── login.vue
 ├── plugins/            # Nuxt plugins
-│   └── firebase.client.ts
+│   └── firebase.ts
 ├── types/              # TypeScript type definitions
 │   └── index.ts
 └── utils/              # Utility functions
@@ -187,40 +187,49 @@ Pure functions for common operations:
 
 ### 7. Data Flow
 
-```
-User Action
-    ↓
-Component Event Handler
-    ↓
-Composable Function
-    ↓
-Firebase API Call
-    ↓
-Update useState
-    ↓
-Reactive UI Update
+```mermaid
+flowchart TD
+    subgraph Client["Browser (Nuxt app)"]
+        P["Pages & Components"]
+        C["Composables<br/>(useState cache + data logic)"]
+        U["Utils<br/>(pure functions)"]
+    end
+    subgraph Firebase
+        A["Firebase Auth"]
+        F["Cloud Firestore"]
+    end
+    P -- "call actions /<br/>read reactive state" --> C
+    P -- "formatting & calculations" --> U
+    C -- "queries & mutations<br/>(Firebase SDK)" --> F
+    C -- "login / logout /<br/>onAuthStateChanged" --> A
 ```
 
+Components never talk to Firebase directly — all reads/writes go through a composable, which caches results in `useState` so repeated visits don't re-query Firestore.
+
 **Example: Loading Exercise Progress**
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Page as /progress/[exerciseId]
+    participant WL as useWorkoutLogs()
+    participant FS as Cloud Firestore
+
+    User->>Page: navigate
+    Page->>WL: fetchLogsForExercise(exerciseId)
+    alt cache hit (exerciseLogs[exerciseId])
+        WL-->>Page: cached WorkoutLog[]
+    else cache miss
+        WL->>FS: query workoutLogs<br/>(userId + exerciseId, orderBy date)
+        FS-->>WL: documents
+        WL->>WL: Timestamp → Date,<br/>store in exerciseLogs[exerciseId]
+        WL-->>Page: WorkoutLog[]
+    end
+    Page->>Page: compute chart data
+    Page-->>User: render ProgressTable / LineGraph
 ```
-User navigates to /progress/[exerciseId]
-    ↓
-ProgressGraph.vue onMounted()
-    ↓
-useWorkoutLogs().fetchLogsForExercise(exerciseId)
-    ↓
-Check cache → If miss, query Firestore
-    ↓
-Transform Timestamp → Date
-    ↓
-Store in exerciseLogs.value[exerciseId]
-    ↓
-Return WorkoutLog[]
-    ↓
-Component computes chart data
-    ↓
-LineGraph renders Chart.js visualization
-```
+
+The Firestore data model behind these flows (collections, fields, relationships) is documented in [DATA_MODEL.md](DATA_MODEL.md).
 
 ## Features Architecture
 
@@ -257,14 +266,30 @@ ProgressGraph component
 
 **Middleware:** `auth.global.ts` protects all routes except login
 
-```
-Page Request
-    ↓
-auth.global.ts middleware
-    ↓
-Check useAuth().userId
-    ├─ Authenticated → Allow navigation
-    └─ Not authenticated → Redirect to /login
+```mermaid
+sequenceDiagram
+    participant App as App start
+    participant Plugin as plugins/firebase.ts
+    participant FA as Firebase Auth
+    participant MW as auth.global.ts
+    participant Login as /login page
+
+    App->>Plugin: initialize Firebase
+    Plugin->>FA: onAuthStateChanged (one-shot)
+    FA-->>Plugin: initial auth state
+    Plugin->>Plugin: resolve $authReady promise
+
+    Note over MW: on every route navigation
+    MW->>Plugin: await $authReady
+    MW->>MW: check isAuthenticated (useAuth)
+    alt authenticated
+        MW-->>App: allow navigation
+    else not authenticated (protected route)
+        MW->>Login: redirect with ?redirect=[target path]
+        Login->>FA: signInWithEmailAndPassword
+        FA-->>Login: success
+        Login-->>App: navigate to redirect target (or home)
+    end
 ```
 
 **Logout Security:**

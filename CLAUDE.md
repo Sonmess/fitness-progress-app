@@ -6,7 +6,7 @@ Fitness tracking app — Nuxt 4, Vue 3 (Composition API), TypeScript, Tailwind C
 
 - **Plan first, implement only after explicit approval.** Always present a plan explaining what will change and why, then wait for the user to approve. Never start coding, committing, or modifying files based on assumed consent — even for small fixes.
 - Work on one agreed item at a time; keep changes small and reviewable.
-- Update `CHANGELOG.md` (under `[Unreleased]`) as part of any user-facing change.
+- Update `CHANGELOG.md` (under `[Unreleased]`) as part of any user-facing change; update the README features list and `docs/ARCHITECTURE.md` when features or structure change; update `docs/DATA_MODEL.md` (incl. the ER diagram) when Firestore collections or types in `app/types/index.ts` change.
 
 ## Commands
 
